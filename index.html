@@ -356,49 +356,48 @@ body.touch .lockmsg{bottom:auto;top:44%;font-size:13px;text-align:center;max-wid
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js"></script>
 <script>
-/* two players over PeerJS: the first to open a room code hosts it, the second connects.
+/* two players over public MQTT relays (WebSocket on 443-style ports, so it works across home, mobile and office networks).
+   Both relays are used at once so the two players meet even if one relay is down; duplicates are harmless.
    Exposes the same shape the game used before (join → emit/on/presence/peers/onPeers/onConnection). */
+const RELAYS=['wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884/mqtt'];
 function makeLobby(){
   return {join:name=>new Promise((resolve,reject)=>{
-    const hostId='gyakusa-tokei-'+String(name).toLowerCase().replace(/[^a-z0-9-]/g,'');
-    const handlers={}, peerH=[], connH=[]; let conns=[], others=new Map(), myPres={}, peer=null, isHost=false, connected=false, settled=false, closed=false;
-    const snapshot=()=>[{presence:myPres,kind:'viewer',sameTab:true,isMe:true},...[...others.values()].map(p=>({presence:p,kind:'viewer',sameTab:false,isMe:false}))];
+    const topic='gyakusa-tokei/v1/'+String(name).toLowerCase().replace(/[^a-z0-9-]/g,'');
+    const me=Math.random().toString(36).slice(2,10);
+    const handlers={}, peerH=[], connH=[], others=new Map(); let myPres={}, settled=false, closed=false, up=0;
+    const snapshot=()=>[{presence:myPres,kind:'viewer',sameTab:true,isMe:true},...[...others.values()].map(o=>({presence:o.p,kind:'viewer',sameTab:false,isMe:false}))];
     let snap=snapshot();
     const fire=()=>{ snap=snapshot(); peerH.forEach(h=>{ try{ h({peers:snap,joined:[],left:[],updated:[]}); }catch(e){} }); };
-    const setConn=c=>{ connected=c; connH.forEach(h=>{ try{ h(c); }catch(e){} }); };
-    const done=()=>{ if(!settled){ settled=true; resolve(api); } };
-    const fail=e=>{ if(!settled){ settled=true; reject({code:'upstream_error',message:String(e&&e.type||e)}); } };
-    function wire(c){
-      c.on('open',()=>{ conns.push(c); others.set(c.peer,{}); c.send({t:'p',d:myPres}); setConn(true); fire(); });
-      c.on('data',m=>{ if(!m||typeof m!=='object') return;
-        if(m.t==='p'){ others.set(c.peer,m.d&&typeof m.d==='object'?m.d:{}); fire(); }
-        else if(m.t==='e'){ (handlers[m.topic]||[]).forEach(h=>{ try{ h({topic:m.topic,data:m.d,sameTab:false,isMe:false}); }catch(e){} }); }
-        else if(m.t==='full'){ (errH).forEach(h=>h({code:'limit_reached',message:'full'})); } });
-      c.on('close',()=>{ conns=conns.filter(x=>x!==c); others.delete(c.peer); fire(); if(!conns.length){ setConn(isHost); if(!isHost&&!closed){ try{ peer.destroy(); }catch(e){} setTimeout(asHost,800+Math.random()*800); } } });
+    const setConn=()=>connH.forEach(h=>{ try{ h(up>0); }catch(e){} });
+    const clients=RELAYS.map(u=>{
+      const c=mqtt.connect(u,{clientId:'gt_'+me+'_'+Math.random().toString(36).slice(2,6),clean:true,reconnectPeriod:2000,connectTimeout:8000,keepalive:30});
+      let isUp=false;
+      c.on('connect',()=>{ if(!isUp){ isUp=true; up++; } c.subscribe(topic); send({t:'p',d:myPres}); setConn(); if(!settled){ settled=true; resolve(api); } });
+      c.on('close',()=>{ if(isUp){ isUp=false; up--; setConn(); } });
       c.on('error',()=>{});
-    }
-    const errH=[];
-    function asHost(){ if(closed) return; peer=new Peer(hostId);
-      peer.on('open',()=>{ isHost=true; setConn(true); done(); });
-      peer.on('connection',c=>{ if(conns.length>=1){ c.on('open',()=>{ c.send({t:'full'}); setTimeout(()=>c.close(),400); }); return; } wire(c); });
-      peer.on('disconnected',()=>{ try{ peer.reconnect(); }catch(e){} });
-      peer.on('error',e=>{ if(e.type==='unavailable-id'){ try{ peer.destroy(); }catch(_){} asGuest(); } else if(e.type!=='peer-unavailable') fail(e); }); }
-    function asGuest(){ if(closed) return; isHost=false; peer=new Peer();
-      peer.on('open',()=>{ wire(peer.connect(hostId,{reliable:true})); done(); });
-      peer.on('error',e=>{ if(e.type==='peer-unavailable'){ try{ peer.destroy(); }catch(_){} setTimeout(asHost,500); } else fail(e); }); }
-    const api={name,
-      emit:(topic,d)=>{ conns.forEach(c=>{ try{ c.send({t:'e',topic,d}); }catch(e){} }); return Promise.resolve(); },
-      on:(topic,h,onErr)=>{ (handlers[topic]=handlers[topic]||[]).push(h); if(onErr) errH.push(onErr); return ()=>{ handlers[topic]=(handlers[topic]||[]).filter(x=>x!==h); }; },
-      presence:patch=>{ myPres={...myPres,...patch}; conns.forEach(c=>{ try{ c.send({t:'p',d:myPres}); }catch(e){} }); fire(); return Promise.resolve(); },
+      c.on('message',(tp,buf)=>{ let m; try{ m=JSON.parse(buf.toString()); }catch(e){ return; } if(!m||m.from===me) return;
+        if(m.t==='p'||m.t==='hb'){ const had=others.get(m.from); others.set(m.from,{p:m.d&&typeof m.d==='object'?m.d:(had?had.p:{}),at:Date.now()}); if(!had||m.t==='p') fire(); if(!had) send({t:'p',d:myPres}); }
+        else if(m.t==='bye'){ others.delete(m.from); fire(); }
+        else if(m.t==='e'){ const seen=m.from+':'+m.n; if(api._seen.has(seen)) return; api._seen.add(seen); if(api._seen.size>500) api._seen.clear();
+          (handlers[m.topic]||[]).forEach(h=>{ try{ h({topic:m.topic,data:m.d,sameTab:false,isMe:false}); }catch(e){} }); } });
+      return c;
+    });
+    let n=0;
+    function send(o){ const s=JSON.stringify({...o,from:me,n:++n}); clients.forEach(c=>{ if(c.connected) c.publish(topic,s); }); }
+    const hb=setInterval(()=>{ if(closed) return; send({t:'hb',d:myPres}); let ch=false; for(const [k,o] of others) if(Date.now()-o.at>15000){ others.delete(k); ch=true; } if(ch) fire(); },4000);
+    addEventListener('pagehide',()=>{ try{ send({t:'bye'}); }catch(e){} });
+    const api={name,_seen:new Set(),
+      emit:(tp,d)=>{ send({t:'e',topic:tp,d}); return Promise.resolve(); },
+      on:(tp,h)=>{ (handlers[tp]=handlers[tp]||[]).push(h); return ()=>{ handlers[tp]=(handlers[tp]||[]).filter(x=>x!==h); }; },
+      presence:patch=>{ myPres={...myPres,...patch}; send({t:'p',d:myPres}); fire(); return Promise.resolve(); },
       peers:()=>snap,
       onPeers:h=>{ peerH.push(h); setTimeout(()=>h({peers:snap,joined:snap,left:[],updated:[]}),0); return ()=>{ const i=peerH.indexOf(h); if(i>=0) peerH.splice(i,1); }; },
-      connected:()=>connected,
-      onConnection:h=>{ connH.push(h); setTimeout(()=>h(connected),0); return ()=>{ const i=connH.indexOf(h); if(i>=0) connH.splice(i,1); }; },
-      leave:()=>{ closed=true; try{ peer&&peer.destroy(); }catch(e){} return Promise.resolve(); }};
-    setTimeout(()=>fail('timeout'),15000);
-    asHost();
+      connected:()=>up>0,
+      onConnection:h=>{ connH.push(h); setTimeout(()=>h(up>0),0); return ()=>{ const i=connH.indexOf(h); if(i>=0) connH.splice(i,1); }; },
+      leave:()=>{ closed=true; clearInterval(hb); try{ send({t:'bye'}); }catch(e){} clients.forEach(c=>c.end(true)); return Promise.resolve(); }};
+    setTimeout(()=>{ if(!settled){ settled=true; reject({code:'upstream_error',message:'timeout'}); } },12000);
   })};
 }
 
@@ -1361,7 +1360,6 @@ function frame(t){
       if(!hit(nx,V.pos.z,.3)) V.pos.x=nx; if(!hit(V.pos.x,nz,.3)) V.pos.z=nz; V.bob+=dt*9; }
     observe(dt);
   }
-  if(S.mode==='coop'){ NET.syncT-=dt; if(NET.syncT<=0){ NET.syncT=4; pushSync(); pushPresence(); renderMembers(); } }
   for(const id in V.npc){ const n=V.npc[id]; n.ph+=dt; n.m.rotation.z=Math.sin(n.ph*1.3)*.015; }
   $('#room').textContent=ROOMS[roomAt(V.pos.x,V.pos.z)].name;
   tgtT-=dt; if(tgtT<=0){ tgtT=.12; const o=S.playing&&!S.paused?aimTarget():null; const tg=$('#target'); if(o){ tg.textContent=(o.userData.label||'調べる')+'（E）'; tg.hidden=false; } else tg.hidden=true;
@@ -1453,12 +1451,14 @@ function startGame(code,mode,role,name){
   window.scrollTo(0,$('#stage').getBoundingClientRect().top+window.scrollY-(TOUCH?0:10));
 }
 $('#btnQuit').addEventListener('click',toTitle);
+// keep the partner in sync even while this tab is in the background (rAF stops there)
+setInterval(()=>{ if(S.mode==='coop'&&K&&!$('#game').hidden){ pushSync(); pushPresence(); renderMembers(); } },3000);
 $('#btnBook').addEventListener('click',()=>{ if(S.playing||S.waiting){ S.paused=false; openBook(); } });
 $('#btnWatch').addEventListener('click',useWatch);
 $('#btnSolo').addEventListener('click',()=>{ const code=($('#codeIn').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6)||randCode(); startGame(code,'solo','solo',''); });
 $('#btnCoop').addEventListener('click',joinCoop);
 $('#btnCoop').disabled=true;
-NET.room=window.Peer?makeLobby():null;
+NET.room=window.mqtt?makeLobby():null;
 if(NET.room){ $('#btnCoop').disabled=false; $('#coopNote').textContent='相手と同じ部屋コードを入れ、別の担当を選んで入る。ログインは不要。'; }
 else $('#coopNote').textContent='通信の部品を読み込めなかった。ページを再読み込みする。ひとり用は遊べる。';
 })();
