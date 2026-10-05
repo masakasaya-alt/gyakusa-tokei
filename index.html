@@ -1461,6 +1461,22 @@ $('#btnCoop').disabled=true;
 NET.room=window.mqtt?makeLobby():null;
 if(NET.room){ $('#btnCoop').disabled=false; $('#coopNote').textContent='相手と同じ部屋コードを入れ、別の担当を選んで入る。ログインは不要。'; }
 else $('#coopNote').textContent='通信の部品を読み込めなかった。ページを再読み込みする。ひとり用は遊べる。';
+// rescue link: ?resume=CODE starts the future player at chapter 3 with the cellar already open
+(function(){
+  const q=new URLSearchParams(location.search), code=(q.get('resume')||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+  if(!code||!NET.room) return;
+  $('#roomCode').value=code; $('#roleFuture').checked=true; if(!$('#nick').value) $('#nick').value='未来';
+  $('#coopNote').textContent=`部屋「${code}」に、未来担当・第3章の朝から再開する…`;
+  joinCoop().then(()=>{
+    if(!K||S.mode!=='coop') return;
+    Object.assign(S.flags,{watch:true,cabOpen:true,pour:true,keyHidden:true,metMasterB:true,metMasterC:true,metButlerC:true});
+    S.keyKnown=true; S.gotGreenKey=true; S.planV=3; PLAN.forEach(p=>S.plan[p.id]=p.ans);
+    ['M1','K1','L1','W1','L2','D1','H1','G_ring','G_hand','N1','N2'].forEach(id=>addEv(id,true));
+    K.sus.forEach(su=>TRAITS.forEach(t=>{ S.known[su.id][t.k]=su.tr[t.k]; }));
+    closeModal(true); enterEra('FC','――第3章の朝から再開した。地下セラーの扉は開いている。');
+    S.visitOpen.add('C'); S.visitOpen.add('X'); rebuildKeepPos(); updateObjective(); updateSuspCount(); pushSync();
+  });
+})();
 })();
 
 </script>
