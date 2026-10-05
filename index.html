@@ -825,7 +825,7 @@ function furnish(){
     if(e==='FC'){ const [bx,bz]=at('conservatory',0,1); const bag=grp(s,'bag','隠された鞄',bx,0,bz); box(bag,.6,.35,.3,mat('#3a2a1a'),0,.18,0); collide(bx,bz,.7,.4);
       const g=wallSpot('conservatory','N',2.5); const gd=grp(s,'grid','石板',g.x,1.6,g.z,g.ry); box(gd,.9,.9,.05,mat('#2a2e30'),0,0,0); pln(gd,.8,.8,new TH.MeshStandardMaterial({map:TX.grid(P.grid),transparent:true}),0,0,.03); } }
   // cellar
-  { for(let i=0;i<3;i++){ const [rx,rz]=at('cellar',-5.2,-3+i*3); box(s,.8,2.2,2.4,mat('#3a2418'),rx,1.1,rz); collide(rx,rz,.9,2.5); }
+  { for(let i=0;i<3;i++){ const [rx,rz]=at('cellar',-3+i*3,-5.2); box(s,2.4,2.2,.8,mat('#3a2418'),rx,1.1,rz); collide(rx,rz,2.5,.9); }
     const [bx,bz]=at('cellar',2.5,2); box(s,2.6,.4,1.2,mat('#5a3a22'),bx,.2,bz); collide(bx,bz,2.7,1.3); }
   // counting objects stand only on the night
   if(past){
