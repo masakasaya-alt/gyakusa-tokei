@@ -1,0 +1,1469 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="殺人計画書の空欄を解き、事件前の夜と事件後の朝を行き来して歴史を変えるタイムリープ・マーダーミステリー。ひとりでも、ふたりでも。">
+<style>*,*::before,*::after{box-sizing:border-box}html,body{margin:0}body{background:#100d0b}</style>
+</head>
+<body>
+<title>逆さ時計の館</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@500&family=Shippori+Mincho+B1:wght@600;800&family=Yomogi&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+/* layout: title sheet (a backward-running clock beside the name, story, cast, solo / two-player cards) → full-width first-person mansion with HUD (pocket watch showing the era's time, chapter, room, objective) → notebook overlay and modals; a spinning dial marks every jump in time. Single dark theme by choice: brass, walnut and dial ivory. */
+:root{
+  --ink:#100d0b; --panel:#1a1512; --panel-2:#251e19; --paper:#ece2ca; --page-ink:#2b2117; --brass:#c9a24e; --brass-hi:#f3dca4; --dial:#efe6cf;
+  --muted:#a8998a; --candle:#e6b45c; --blood:#c4453a; --ok:#79c48f; --line:rgba(236,226,202,.14);
+  --f-display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --f-mono:"DM Mono",ui-monospace,Menlo,monospace;
+  --f-hand:"Yomogi","Zen Kaku Gothic New",cursive;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{min-height:100%}
+body{background:var(--ink);color:var(--paper);font-family:var(--f-body);font-size:15px;line-height:1.7}
+.wrap{max-width:1280px;margin:0 auto;padding-inline:16px;padding-block:20px 40px}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--candle);outline-offset:2px}
+.btn{border:1px solid transparent;border-radius:4px;padding:10px 18px;cursor:pointer;font-weight:700;letter-spacing:.04em}
+.btn.primary{background:var(--candle);color:var(--ink)}
+.btn.ghost{background:transparent;border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--muted)}
+.btn.small{padding:6px 12px;font-size:13px}
+.btn:disabled{opacity:.4;cursor:default}
+.fine{margin:0;color:var(--muted);font-size:13px}
+
+/* title */
+.title{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.eyebrow{margin:0;font-size:12px;letter-spacing:.2em;color:var(--candle)}
+h1{margin:0;font-family:var(--f-display);font-weight:800;font-size:clamp(44px,8.5vw,88px);line-height:1.08;letter-spacing:.08em;
+  background:linear-gradient(180deg,#f8e8bd 0%,#dcb468 46%,#8a6424 50%,#c99a48 72%,#f0d496 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:center}
+.hero .heroclock svg{width:min(200px,34vw);height:auto;display:block;filter:drop-shadow(0 8px 24px rgba(0,0,0,.6))}
+.hero .sub{margin:6px 0 0;font-family:var(--f-display);color:var(--brass);letter-spacing:.4em;font-size:14px}
+.hand{transform-box:view-box;transform-origin:100px 100px}
+.hero .hm{animation:rev 9s linear infinite}
+.hero .hh{animation:rev 108s linear infinite}
+.hero .hs{animation:rev 1.5s steps(12) infinite}
+@keyframes rev{from{transform:rotate(0)}to{transform:rotate(-360deg)}}
+@keyframes fwd{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@media (max-width:640px){ .hero{grid-template-columns:1fr} }
+h1 small{font-size:.4em;letter-spacing:.2em}
+.lead{margin:0;font-size:16px;max-width:42em}
+.cast{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.who{display:flex;gap:8px;align-items:center;min-width:0}
+.dot{width:28px;height:28px;border-radius:50%;flex:none;border:2px solid rgba(255,255,255,.2)}
+.who b{display:block;font-family:var(--f-display);font-size:14px;font-weight:600;line-height:1.3}
+.who small{display:block;color:var(--muted);font-size:12px;line-height:1.3}
+.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.rule{background:var(--panel);border-radius:6px;padding:12px 16px;min-width:0}
+.rule b{display:block;font-family:var(--f-display);font-size:17px;color:var(--candle)}
+.rule p{margin:0;font-size:14px;color:var(--muted)}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px;margin:0}
+.keys dt{font-family:var(--f-mono);color:var(--candle)}
+.keys dd{margin:0;color:var(--muted)}
+.start{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:4px}
+.lbl{font-size:12px;letter-spacing:.1em;color:var(--muted)}
+input.code{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:9px 12px;font-family:var(--f-mono);font-size:20px;letter-spacing:.25em;text-transform:uppercase;width:160px}
+
+/* game */
+.game{display:flex;flex-direction:column;gap:10px}
+.stage{position:relative;width:100%;aspect-ratio:16/9;max-height:84vh;background:#000;border-radius:6px;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:none}
+.stage canvas{display:block;width:100%;height:100%}
+.hud{position:absolute;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.9);font-size:13px}
+.tl{left:12px;top:10px;display:flex;flex-direction:column;gap:4px}
+.clock{font-family:var(--f-mono);font-size:30px;line-height:1}
+.clock.late{color:var(--blood)}
+.chip{display:inline-block;background:rgba(14,18,21,.75);border-radius:4px;padding:2px 8px}
+.tr{right:12px;top:10px;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.cross{left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%)}
+.cross::before,.cross::after{content:"";position:absolute;background:rgba(255,255,255,.75)}
+.cross::before{left:8px;top:2px;width:2px;height:14px}
+.cross::after{top:8px;left:2px;height:2px;width:14px}
+.target{left:50%;top:calc(50% + 22px);transform:translateX(-50%);background:rgba(14,18,21,.8);border:1px solid rgba(239,182,90,.5);border-radius:4px;padding:2px 10px}
+.toasts{left:12px;bottom:12px;display:flex;flex-direction:column;gap:4px;max-width:46%}
+.toasts p{margin:0;background:rgba(14,18,21,.82);border-left:3px solid var(--candle);padding:3px 10px;border-radius:2px;animation:fade 6s forwards}
+@keyframes fade{0%,82%{opacity:1}100%{opacity:0}}
+.lockmsg{position:absolute;left:50%;bottom:20%;transform:translateX(-50%);margin:0;background:rgba(14,18,21,.85);border:1px solid var(--line);border-radius:6px;padding:8px 16px;pointer-events:none}
+.br{right:12px;bottom:12px}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.help{margin:0;color:var(--muted);font-size:13px}
+.help kbd{font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);border-radius:3px;padding:0 5px;color:var(--paper)}
+.fadeout{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity 1.2s}
+.fadeout.on{opacity:1}
+
+/* overlays */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(5,7,9,.8);display:grid;place-items:center;padding:16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;width:100%;max-width:720px;max-height:90vh;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+.panel.wide{max-width:1040px}
+.mhead{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.mhead h3{margin:0;font-family:var(--f-display);font-size:22px;font-weight:600}
+.x{background:transparent;border:1px solid var(--line);border-radius:4px;width:36px;height:36px;cursor:pointer;font-size:18px;flex:none}
+#mBody{display:flex;flex-direction:column;gap:12px}
+.cap{margin:0}
+.hand{font-family:var(--f-hand);font-size:19px;line-height:1.6;background:var(--paper);color:var(--page-ink);padding:12px 16px;border-radius:2px;margin:0}
+.letter{margin:0;background:var(--paper);color:var(--page-ink);padding:18px 22px;border-radius:2px;font-family:var(--f-display);font-size:16px;line-height:1.9;white-space:pre-line}
+.engrave{margin:0;text-align:center;font-family:var(--f-display);font-size:17px;letter-spacing:.12em;color:#d9c08a;padding:8px;border:1px solid rgba(217,192,138,.35);border-radius:2px}
+.closeup{display:block;width:100%;height:auto;border-radius:4px}
+.clue{border-left:3px solid var(--blood);background:rgba(196,69,58,.08);padding:8px 12px;margin:0}
+.clue b{color:#ff9a8a}
+.book{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#5a2a22;padding:8px;border-radius:4px}
+.page{background:var(--paper);color:var(--page-ink);padding:12px;min-width:0}
+.page h4{margin:0 0 8px;font-family:var(--f-display);font-size:16px;text-align:center;letter-spacing:.2em}
+.tbl{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+.cell{display:flex;align-items:center;gap:6px}
+.cell b{font-family:var(--f-display);font-size:24px;line-height:1}
+.icons{display:flex;gap:12px;justify-content:center;background:#c9a24e;padding:12px;border-radius:4px}
+/* talk */
+.talk{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start}
+.face{width:72px;height:72px;border-radius:50%;border:3px solid rgba(255,255,255,.2)}
+.talk h4{margin:0;font-family:var(--f-display);font-size:20px}
+.talk .role{color:var(--muted);font-size:13px}
+.seen{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.seen span{font-size:12px;border:1px solid var(--line);border-radius:10px;padding:0 8px}
+.qs{display:flex;flex-direction:column;gap:6px}
+.q{text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:8px 12px;cursor:pointer}
+.q:hover{border-color:var(--candle)}
+.q.done{opacity:.6}
+.say{margin:0;font-family:var(--f-display);font-size:17px;background:var(--panel-2);border-radius:4px;padding:12px 16px;min-height:3em}
+/* notebook */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tabs button{background:transparent;border:0;border-bottom:2px solid transparent;padding:6px 14px;cursor:pointer;color:var(--muted)}
+.tabs button[aria-selected=true]{color:var(--candle);border-bottom-color:var(--candle)}
+.boardwrap{overflow-x:auto}
+table.board{border-collapse:collapse;width:100%;min-width:760px;font-size:14px}
+table.board th{font-weight:400;color:var(--muted);font-size:12px;text-align:center;padding:4px 6px;border-bottom:1px solid var(--line)}
+table.board td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:center}
+table.board td.nm{text-align:left;white-space:nowrap}
+table.board tr.out td{opacity:.4}
+table.board tr.out td.nm b{text-decoration:line-through}
+table.board td.unk{color:var(--muted)}
+table.board .why{font-size:12px;color:var(--muted);text-align:left;max-width:200px}
+.mini-dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px;margin-right:6px}
+.evlist{display:flex;flex-direction:column;gap:8px}
+.ev{background:var(--panel-2);border-radius:4px;padding:8px 12px;display:flex;gap:10px;align-items:flex-start}
+.ev .tag{font-size:11px;border-radius:3px;padding:1px 6px;flex:none;margin-top:2px}
+.tag.p{background:rgba(196,69,58,.25);color:#ffb0a4}
+.tag.r{background:rgba(239,182,90,.2);color:var(--candle)}
+.tag.t{background:rgba(120,160,200,.2);color:#a8c8e8}
+.ev p{margin:0;font-size:14px}
+.ev .pred{color:#ff9a8a;font-size:13px}
+.ev.pick{cursor:pointer;border:1px solid transparent}
+.ev.pick:hover{border-color:var(--muted)}
+.ev.sel{border-color:var(--candle)}
+.testi{display:flex;flex-direction:column;gap:6px}
+.testi div{background:var(--panel-2);border-radius:4px;padding:6px 12px;font-size:14px}
+.choose{display:flex;flex-wrap:wrap;gap:6px}
+.choose button{background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:6px 10px;cursor:pointer}
+.choose button.sel{border-color:var(--candle);color:var(--candle)}
+.msg{margin:0;min-height:1.5em;color:var(--candle)}
+.msg.bad{color:#ff9a8a}
+/* keypad */
+.keypad{display:flex;flex-direction:column;gap:12px;align-items:center}
+.slots{display:flex;gap:10px}
+.slots span{width:50px;height:60px;border:1px solid var(--line);border-radius:4px;display:grid;place-items:center;font-family:var(--f-mono);font-size:32px;background:var(--ink)}
+.keys2{display:grid;grid-template-columns:repeat(3,70px);gap:8px}
+.keys2 button{height:52px;border-radius:4px;border:1px solid var(--line);background:var(--panel-2);cursor:pointer;font-family:var(--f-mono);font-size:22px}
+.keys2 button.go{background:var(--candle);color:var(--ink);font-family:var(--f-body);font-size:15px;font-weight:700}
+.keys2 button.del{font-family:var(--f-body);font-size:14px}
+.shake{animation:shake .4s}
+@keyframes shake{20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(4px)}}
+.death{font-family:var(--f-display);font-size:20px;line-height:2;white-space:pre-line;margin:0}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--panel-2);border-radius:6px;padding:8px 12px}
+.stats small{display:block;color:var(--muted);font-size:12px}
+.stats b{font-family:var(--f-mono);font-size:22px}
+@media (max-width:760px){ .cast{grid-template-columns:repeat(2,1fr)} .rules{grid-template-columns:1fr} .book{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:reduce){ .toasts p{animation:none} .fadeout{transition:none} }
+.chapter{font-size:12px;letter-spacing:.2em;color:var(--candle)}
+.eraw{display:flex;align-items:center;gap:10px}
+.eraw svg{width:48px;height:auto;filter:drop-shadow(0 2px 4px rgba(0,0,0,.7))}
+.era{font-family:var(--f-display);font-size:20px;font-weight:600;letter-spacing:.06em;background:rgba(16,13,11,.78);border-radius:4px;padding:2px 10px}
+.era.past{color:#f0c98a;border-left:3px solid #d8a050}
+.era.future{color:#efe6cf;border-left:3px solid #9a8a70}
+.obj{max-width:440px;text-align:right}
+.partner{color:var(--candle)}
+.tint{position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply}
+.tint.past{background:radial-gradient(ellipse at center,rgba(255,220,170,0) 40%,rgba(120,70,20,.45) 100%)}
+.tint.future{background:radial-gradient(ellipse at center,rgba(230,220,200,0) 40%,rgba(60,52,44,.5) 100%)}
+.shift{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;pointer-events:none;background:radial-gradient(circle,rgba(16,13,11,.55),rgba(5,4,3,.85))}
+.shift svg{width:min(220px,30vw);height:auto}
+.shift.back .hm{animation:rev .5s linear infinite}
+.shift.back .hh{animation:rev 6s linear infinite}
+.shift.fwd .hm{animation:fwd .5s linear infinite}
+.shift.fwd .hh{animation:fwd 6s linear infinite}
+.shift p{margin:0;font-family:var(--f-display);font-weight:800;font-size:clamp(28px,5vw,60px);letter-spacing:.3em;color:var(--paper);text-shadow:0 0 22px rgba(230,180,92,.8)}
+.shift.go{animation:shiftIn 2.6s ease forwards}
+@keyframes shiftIn{0%{opacity:0;filter:blur(12px)}20%{opacity:1;filter:blur(0)}75%{opacity:1}100%{opacity:0}}
+.shiftline{margin:0;font-family:var(--f-display);font-size:18px;color:var(--brass);letter-spacing:.2em}
+.letter.plan{font-family:var(--f-hand);font-size:19px;line-height:2.1;background:#efe4cc;background-image:repeating-linear-gradient(to bottom,transparent 0 37px,rgba(43,33,23,.12) 37px 38px)}
+.blank{display:inline-block;border-bottom:2px solid #8a2a20;color:#8a2a20;padding:0 6px;margin:0 2px;font-size:16px}
+.filled{color:#7a1a10;border-bottom:2px solid #7a1a10;padding:0 4px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.mode{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.mode h2{margin:0;font-family:var(--f-display);font-size:22px;font-weight:600}
+.mode p{margin:0;color:var(--muted);font-size:14px}
+.mode .grow{flex:1}
+input.txt{background:var(--ink);border:1px solid var(--line);border-radius:4px;padding:9px 12px;min-width:0}
+.mode input.code{width:auto}
+.roles{border:0;margin:0;padding:0;display:flex;gap:8px;flex-wrap:wrap}
+.roles legend{font-size:12px;letter-spacing:.1em;color:var(--muted);margin-bottom:6px}
+.roles label{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);border-radius:4px;padding:9px;cursor:pointer;font-size:14px;min-width:140px}
+.roles label:has(input:checked){border-color:var(--candle);color:var(--candle);background:rgba(239,182,90,.08)}
+.members{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.members li{display:flex;gap:8px;background:var(--ink);border-radius:4px;padding:6px 10px;font-size:14px}
+.members small{margin-left:auto;color:var(--muted)}
+@media (max-width:760px){ .modes{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:reduce){ .shift.go{animation:none} .hand{animation:none!important} }
+/* touch: thumb joystick on the left, look by dragging, big buttons on the right */
+.joyzone,.tbtns{display:none}
+.touchkeys{display:none}
+body.touch .touchkeys{display:grid}
+body.touch .keys:not(.touchkeys){display:none}
+body.touch .joyzone{display:block;position:absolute;left:0;bottom:0;width:45%;height:58%;z-index:3;touch-action:none}
+.joybase{position:absolute;width:124px;height:124px;margin:-62px 0 0 -62px;border-radius:50%;border:2px solid rgba(239,182,90,.5);background:rgba(16,13,11,.35);pointer-events:none}
+.joyknob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(239,182,90,.75);box-shadow:0 2px 8px rgba(0,0,0,.6)}
+.joyhint{position:absolute;left:18px;bottom:22px;width:96px;height:96px;border-radius:50%;border:2px dashed rgba(239,182,90,.35);display:grid;place-items:center;color:rgba(239,182,90,.6);font-size:12px;pointer-events:none}
+body.touch .tbtns{display:flex;position:absolute;right:12px;bottom:14px;z-index:4;flex-direction:column;align-items:flex-end;gap:10px}
+.tbtn{min-width:64px;min-height:52px;border-radius:26px;border:1px solid rgba(239,182,90,.55);background:rgba(16,13,11,.78);color:var(--paper);font-weight:700;padding:0 16px;touch-action:manipulation}
+.tbtn.big{min-width:96px;min-height:96px;border-radius:50%;font-size:15px;background:rgba(201,162,78,.88);color:var(--ink);border-color:var(--brass-hi);padding:6px;line-height:1.25}
+.tbtn.big.off{background:rgba(16,13,11,.6);color:var(--muted);border-color:rgba(239,182,90,.3)}
+.tbtn:disabled{opacity:.35}
+.trow{display:flex;gap:8px}
+body.touch .stage{aspect-ratio:auto;height:calc(100svh - 64px);max-height:none;width:calc(100% + 32px);margin-left:-16px;border-radius:0}
+body.touch .game{gap:6px}
+body.touch .game .help{display:none}
+body.touch #btnBook,body.touch #btnWatch{display:none}
+body.touch .target{display:none!important}
+body.touch .cross{width:14px;height:14px}
+body.touch .era{font-size:15px}
+body.touch .eraw svg{width:34px}
+body.touch .chapter{font-size:10px}
+body.touch .tr{max-width:56%}
+body.touch .obj{font-size:12px;line-height:1.4}
+body.touch .toasts{top:118px;bottom:auto;left:10px;max-width:66%}
+body.touch .toasts p{font-size:12px;padding:2px 8px}
+body.touch .lockmsg{bottom:auto;top:44%;font-size:13px;text-align:center;max-width:80%}
+@media (max-width:760px){
+  .modal{padding:0}
+  .modal{display:block}
+  .panel{box-sizing:border-box;width:100%;min-width:0;max-width:none!important;max-height:100svh;height:100svh;border-radius:0;padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px))}
+  .panel>*{min-width:0}
+  .tabs{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+  .tabs button{white-space:nowrap;padding:8px 10px;flex:none}
+  .boardwrap,.evlist,.book{max-width:100%;overflow-x:auto}
+  .choose button,.q{min-height:44px}
+  .letter{padding:16px;font-size:15px}
+  .letter.plan{font-size:17px}
+  .stats b{font-size:18px}
+  .scards{display:flex;flex-direction:column;gap:8px}
+}
+.scards{display:flex;flex-direction:column;gap:8px}
+.scard{background:var(--panel-2);border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.scard.out{opacity:.45}
+.scard .top{display:flex;align-items:center;gap:8px}
+.scard .top b{font-family:var(--f-display);font-size:16px}
+.scard .top small{color:var(--muted)}
+.scard .top button{margin-left:auto}
+.scard.out .top b{text-decoration:line-through}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chips span{font-size:12px;border:1px solid var(--line);border-radius:10px;padding:0 8px}
+.chips span.unk{color:var(--muted);border-style:dashed}
+.scard .why{font-size:12px;color:var(--muted)}
+</style>
+
+<div class="wrap">
+<section class="title" id="title">
+  <p class="eyebrow">謎解き × マーダーミステリー × タイムリープ　試作 v0.3　全3章　PC・スマホ対応</p>
+  <div class="hero"><div class="heroclock" id="heroClock"></div><div><h1>逆さ時計の館</h1><p class="sub">針が戻るたび、歴史が変わる</p></div></div>
+  <p class="lead">嵐が明けた朝、黒須邸の当主・黒須宗一郎が書斎で死んでいた。遺体の手には止まった懐中時計と、血でにじんだ犯人の殺人計画書。計画書の空欄を解き明かし、事件前の夜へ飛んで歴史を変えろ。過去を変えるたびに未来は形を変え、新しい悲劇が起きる。屋敷の10人の中から犯人を突き止め、誰も死なない朝を取り戻せ。</p>
+  <div class="cast" id="castList"></div>
+  <div class="rules">
+    <div class="rule"><b>計画書の空欄を解く</b><p>「眠らせる方法は？」などの命題を、屋敷を調べて解明する。解明して次の部屋に入ると、犯人に襲われて時を飛ぶ。</p></div>
+    <div class="rule"><b>過去を変えると未来が変わる</b><p>事件前の夜で計画を邪魔すると、事件直後の朝が変わる。助けたつもりが、別の誰かが死ぬこともある。</p></div>
+    <div class="rule"><b>証拠で犯人を絞る</b><p>錠の奥の物証、人の証言、襲われた瞬間に見た特徴。最後は犯行の瞬間に、証拠を突きつけて名指しする。</p></div>
+  </div>
+  <div class="modes">
+    <div class="mode">
+      <h2>ひとりで遊ぶ</h2>
+      <p class="grow">襲われるたびに、事件直後の朝と事件前の夜を行き来して、両方を自分で進める。</p>
+      <button class="btn primary" id="btnSolo">ひとりで始める</button>
+    </div>
+    <div class="mode">
+      <h2>ふたりで遊ぶ</h2>
+      <p>ひとりは<b>過去</b>（事件前の夜）、ひとりは<b>未来</b>（事件直後の朝）を探索する。通話しながら、時を越えて情報を伝え合う。過去が変わると、未来の屋敷が変わる。</p>
+      <div class="row">
+        <div class="field" style="flex:1;min-width:110px"><label class="lbl" for="nick">名前</label><input class="txt" id="nick" maxlength="10" autocomplete="off"></div>
+        <div class="field" style="flex:1;min-width:130px"><label class="lbl" for="roomCode">部屋コード（ふたりとも同じ）</label><input class="code" id="roomCode" maxlength="6" autocomplete="off" spellcheck="false"></div>
+      </div>
+      <fieldset class="roles"><legend>担当（相手と別のほう）</legend>
+        <label><input type="radio" name="role" id="rolePast" value="past" checked> 過去（事件前の夜）</label>
+        <label><input type="radio" name="role" id="roleFuture" value="future"> 未来（事件直後の朝）</label>
+      </fieldset>
+      <button class="btn primary" id="btnCoop">この部屋に入る</button>
+      <ul class="members" id="members" hidden></ul>
+      <p class="fine" id="coopNote">接続を確認中…</p>
+    </div>
+  </div>
+  <dl class="keys touchkeys">
+    <dt>左下</dt><dd>指を置いて動かすと歩く。端まで倒すと走る</dd>
+    <dt>右側</dt><dd>ドラッグで見回す。タップで照準の先を調べる</dd>
+    <dt>調べる</dt><dd>照準の先の物を調べる・人に話しかける</dd>
+    <dt>手帳・時計</dt><dd>計画書と容疑者ボード／懐中時計（ひとり用・未来でのみ）</dd>
+  </dl>
+  <dl class="keys">
+    <dt>クリック</dt><dd>視点をマウスに固定（Esc で解除）。固定中のクリックで「調べる・話す」</dd>
+    <dt>W A S D</dt><dd>移動　Shift で走る</dd>
+    <dt>E</dt><dd>照準の先を調べる・話しかける</dd>
+    <dt>Tab</dt><dd>手帳（計画書・容疑者ボード・証拠・証言）</dd>
+    <dt>T</dt><dd>懐中時計（ひとり用・未来でのみ。過去へ戻る）</dd>
+  </dl>
+  <div class="start"><div class="field"><label class="lbl" for="codeIn">事件コード（ひとり用。同じコードなら同じ事件）</label><input class="code" id="codeIn" maxlength="6" autocomplete="off" spellcheck="false"></div></div>
+  <p class="fine">時間制限はない。犯人・人物の特徴・証拠・錠の番号は、コードから毎回作られる（ふたりで遊ぶときは部屋コードが事件コードになる）。</p>
+</section>
+
+<section class="game" id="game" hidden>
+  <div class="stage" id="stage">
+    <div class="hud tl"><span class="chapter" id="chapter">第1章</span><span class="eraw"><span id="eraWatch"></span><span class="era" id="era">未来・翌朝7時</span></span><span class="chip" id="room">客間</span></div>
+    <div class="hud tr"><span class="chip obj" id="objective"></span><span class="chip" id="suspN">容疑者 10人</span><span class="chip partner" id="partner" hidden></span></div>
+    <div class="hud cross" id="cross"></div>
+    <div class="hud target chip" id="target" hidden></div>
+    <div class="hud toasts" id="toasts"></div>
+    <p class="lockmsg" id="lockmsg" hidden>画面をクリックすると視点を動かせる</p>
+    <div class="tint" id="tint"></div>
+    <div class="shift" id="shift" hidden><div id="shiftClock"></div><p id="shiftText">未来が変わった</p></div>
+    <div class="joyzone" id="joyzone"><div class="joyhint" id="joyhint">移動</div><div class="joybase" id="joybase" hidden><div class="joyknob" id="joyknob"></div></div></div>
+    <div class="tbtns" id="tbtns"><button class="tbtn big off" id="tAct">調べる</button><div class="trow"><button class="tbtn" id="tWatch">時計</button><button class="tbtn" id="tBook">手帳</button></div></div>
+    <div class="fadeout" id="fade"></div>
+  </div>
+  <div class="bar">
+    <p class="help">クリックで視点固定 ・ <kbd>WASD</kbd> 移動 ・ <kbd>E</kbd>/クリック 調べる・話す ・ <kbd>Tab</kbd> 手帳 ・ <kbd>T</kbd> 懐中時計 ・ <kbd>Esc</kbd> マウス解放</p>
+    <div class="bar"><button class="btn ghost small" id="btnWatch">懐中時計</button><button class="btn ghost small" id="btnBook">手帳を開く</button><button class="btn ghost small" id="btnQuit">タイトルへ</button></div>
+  </div>
+</section>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="mhead"><h3 id="mTitle"></h3><button class="x" id="mClose" aria-label="閉じる">×</button></div>
+    <div id="mBody"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+/* two players over PeerJS: the first to open a room code hosts it, the second connects.
+   Exposes the same shape the game used before (join → emit/on/presence/peers/onPeers/onConnection). */
+function makeLobby(){
+  return {join:name=>new Promise((resolve,reject)=>{
+    const hostId='gyakusa-tokei-'+String(name).toLowerCase().replace(/[^a-z0-9-]/g,'');
+    const handlers={}, peerH=[], connH=[]; let conns=[], others=new Map(), myPres={}, peer=null, isHost=false, connected=false, settled=false, closed=false;
+    const snapshot=()=>[{presence:myPres,kind:'viewer',sameTab:true,isMe:true},...[...others.values()].map(p=>({presence:p,kind:'viewer',sameTab:false,isMe:false}))];
+    let snap=snapshot();
+    const fire=()=>{ snap=snapshot(); peerH.forEach(h=>{ try{ h({peers:snap,joined:[],left:[],updated:[]}); }catch(e){} }); };
+    const setConn=c=>{ connected=c; connH.forEach(h=>{ try{ h(c); }catch(e){} }); };
+    const done=()=>{ if(!settled){ settled=true; resolve(api); } };
+    const fail=e=>{ if(!settled){ settled=true; reject({code:'upstream_error',message:String(e&&e.type||e)}); } };
+    function wire(c){
+      c.on('open',()=>{ conns.push(c); others.set(c.peer,{}); c.send({t:'p',d:myPres}); setConn(true); fire(); });
+      c.on('data',m=>{ if(!m||typeof m!=='object') return;
+        if(m.t==='p'){ others.set(c.peer,m.d&&typeof m.d==='object'?m.d:{}); fire(); }
+        else if(m.t==='e'){ (handlers[m.topic]||[]).forEach(h=>{ try{ h({topic:m.topic,data:m.d,sameTab:false,isMe:false}); }catch(e){} }); }
+        else if(m.t==='full'){ (errH).forEach(h=>h({code:'limit_reached',message:'full'})); } });
+      c.on('close',()=>{ conns=conns.filter(x=>x!==c); others.delete(c.peer); fire(); if(!conns.length){ setConn(isHost); if(!isHost&&!closed){ try{ peer.destroy(); }catch(e){} setTimeout(asHost,800+Math.random()*800); } } });
+      c.on('error',()=>{});
+    }
+    const errH=[];
+    function asHost(){ if(closed) return; peer=new Peer(hostId);
+      peer.on('open',()=>{ isHost=true; setConn(true); done(); });
+      peer.on('connection',c=>{ if(conns.length>=1){ c.on('open',()=>{ c.send({t:'full'}); setTimeout(()=>c.close(),400); }); return; } wire(c); });
+      peer.on('disconnected',()=>{ try{ peer.reconnect(); }catch(e){} });
+      peer.on('error',e=>{ if(e.type==='unavailable-id'){ try{ peer.destroy(); }catch(_){} asGuest(); } else if(e.type!=='peer-unavailable') fail(e); }); }
+    function asGuest(){ if(closed) return; isHost=false; peer=new Peer();
+      peer.on('open',()=>{ wire(peer.connect(hostId,{reliable:true})); done(); });
+      peer.on('error',e=>{ if(e.type==='peer-unavailable'){ try{ peer.destroy(); }catch(_){} setTimeout(asHost,500); } else fail(e); }); }
+    const api={name,
+      emit:(topic,d)=>{ conns.forEach(c=>{ try{ c.send({t:'e',topic,d}); }catch(e){} }); return Promise.resolve(); },
+      on:(topic,h,onErr)=>{ (handlers[topic]=handlers[topic]||[]).push(h); if(onErr) errH.push(onErr); return ()=>{ handlers[topic]=(handlers[topic]||[]).filter(x=>x!==h); }; },
+      presence:patch=>{ myPres={...myPres,...patch}; conns.forEach(c=>{ try{ c.send({t:'p',d:myPres}); }catch(e){} }); fire(); return Promise.resolve(); },
+      peers:()=>snap,
+      onPeers:h=>{ peerH.push(h); setTimeout(()=>h({peers:snap,joined:snap,left:[],updated:[]}),0); return ()=>{ const i=peerH.indexOf(h); if(i>=0) peerH.splice(i,1); }; },
+      connected:()=>connected,
+      onConnection:h=>{ connH.push(h); setTimeout(()=>h(connected),0); return ()=>{ const i=connH.indexOf(h); if(i>=0) connH.splice(i,1); }; },
+      leave:()=>{ closed=true; try{ peer&&peer.destroy(); }catch(e){} return Promise.resolve(); }};
+    setTimeout(()=>fail('timeout'),15000);
+    asHost();
+  })};
+}
+
+</script>
+<script>
+(() => {
+const $=s=>document.querySelector(s);
+const TAU=Math.PI*2;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rndU=(a,b)=>a+Math.random()*(b-a);
+function hashStr(s){ let h=2166136261>>>0; for(const ch of s){ h^=ch.charCodeAt(0); h=Math.imul(h,16777619); } return h>>>0; }
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function shuffle(arr,r){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* =========================================================
+   cast and traits
+   ========================================================= */
+const CAST=[
+  {id:0,name:'黒須 澄江',role:'当主の妻',color:'#8b4a5a',hair:'#2a1a1a',motive:'夫が研究のために屋敷を売ろうとしていた'},
+  {id:1,name:'真壁 透',role:'助手',color:'#3f6a8a',hair:'#1a1a1a',motive:'研究の手柄をすべて奪われていた'},
+  {id:2,name:'灰田 源蔵',role:'執事',color:'#4a4a42',hair:'#c8c8c0',motive:'長年の忠義を、ひと言で切り捨てられた'},
+  {id:3,name:'小夜',role:'女中',color:'#2a2a3a',hair:'#3a2418',motive:'家族の借金を盾に、脅されていた'},
+  {id:4,name:'権藤',role:'料理人',color:'#e8e4da',hair:'#5a3a22',motive:'店を潰された恨みを、20年抱えていた'},
+  {id:5,name:'白石 医師',role:'主治医',color:'#5a6a5a',hair:'#8a8a82',motive:'診断書の偽造を知られていた'},
+  {id:6,name:'九条 伯爵夫人',role:'客',color:'#7a3a8a',hair:'#d8c070',motive:'若い頃の手紙を、取り返したかった'},
+  {id:7,name:'早瀬',role:'記者',color:'#8a6a3a',hair:'#2a1a10',motive:'特ダネを潰すと脅されていた'},
+  {id:8,name:'有馬',role:'画家',color:'#3a7a6a',hair:'#1a1a2a',motive:'贋作を売ったことを暴かれかけていた'},
+  {id:9,name:'堂本',role:'弁護士',color:'#2a3a5a',hair:'#4a4a4a',motive:'遺言書の書き換えを止められなかった'}
+];
+const TRAITS=[
+  {k:'hand',label:'利き手',v:{L:'左',R:'右'},how:'夕食（21:30〜22:00）の食堂で、グラスを持つ手を見る'},
+  {k:'ring',label:'指輪',v:{true:'あり',false:'なし'},how:'近くで話す'},
+  {k:'tall',label:'背',v:{true:'高い',false:'低い'},how:'同じ部屋で姿を見る'},
+  {k:'perfume',label:'香水',v:{true:'あり',false:'なし'},how:'話しかけたときの匂い'},
+  {k:'smoker',label:'煙草',v:{true:'吸う',false:'吸わない'},how:'22:40〜22:55 の図書室で、誰が吸っているか見る'},
+  {k:'shoe',label:'靴',v:{big:'大きい',small:'小さい'},how:'玄関の靴棚'}
+];
+const TV=(k,v)=>TRAITS.find(t=>t.k===k).v[String(v)];
+const CULPRIT_TEXT={
+  hand:{L:'犯人は左利き',R:'犯人は右利き'},
+  ring:{true:'犯人は指輪をしている',false:'犯人は指輪をしていない'},
+  tall:{true:'犯人は背が高い',false:'犯人は背が低い'},
+  perfume:{true:'犯人は香水をつけている',false:'犯人は香水をつけていない'},
+  smoker:{true:'犯人は煙草を吸う',false:'犯人は煙草を吸わない'},
+  shoe:{big:'犯人の靴は大きい',small:'犯人の靴は小さい'}
+};
+
+/* =========================================================
+   mansion layout: 3 x 3 rooms, 12 m each
+   ========================================================= */
+const CELL=12;
+const ROOMS={
+  study:{i:-1,j:-1,name:'書斎'}, dining:{i:0,j:-1,name:'食堂'}, conservatory:{i:1,j:-1,name:'温室'},
+  library:{i:-1,j:0,name:'図書室'}, hall:{i:0,j:0,name:'広間'}, guest:{i:1,j:0,name:'客間'},
+  kitchen:{i:-1,j:1,name:'厨房'}, entrance:{i:0,j:1,name:'玄関'}, cellar:{i:1,j:1,name:'地下セラー'}
+};
+const DOORS=[['dining','hall'],['library','hall'],['hall','guest','G'],['hall','entrance'],['library','kitchen'],['kitchen','entrance'],['study','dining','S'],['conservatory','guest','C'],['entrance','cellar','X']];
+const OPEN_ROOMS=['hall','dining','library','guest','kitchen','entrance'];
+const LOCK_INFO={G:{name:'客間の扉',from:'guest'},S:{name:'書斎の扉',from:'dining'},C:{name:'温室の扉',from:'guest'},X:{name:'地下セラーの扉',from:'entrance'}};
+const rc=id=>({x:ROOMS[id].i*CELL,z:ROOMS[id].j*CELL});
+function roomAt(x,z){ const i=Math.round(x/CELL), j=Math.round(z/CELL); for(const k in ROOMS){ if(ROOMS[k].i===i&&ROOMS[k].j===j) return k; } return 'hall'; }
+function doorPos(a,b){ const A=ROOMS[a],B=ROOMS[b]; if(A.i!==B.i) return {x:(A.i+B.i)/2*CELL,z:A.j*CELL,axis:'x'}; return {x:A.i*CELL,z:(A.j+B.j)/2*CELL,axis:'z'}; }
+function roomPath(from,to){
+  if(from===to) return [from];
+  const adj={}; DOORS.forEach(([a,b,l])=>{ if(l) return; (adj[a]=adj[a]||[]).push(b); (adj[b]=adj[b]||[]).push(a); });
+  const prev={[from]:null}, q=[from];
+  while(q.length){ const r=q.shift(); if(r===to) break; (adj[r]||[]).forEach(n=>{ if(!(n in prev)){ prev[n]=r; q.push(n); } }); }
+  if(!(to in prev)) return [from];
+  const path=[]; let c=to; while(c){ path.unshift(c); c=prev[c]; } return path;
+}
+// standing spots inside the open rooms (local to the room centre)
+const SPOTS=[[-3.5,-3],[0,-3.5],[3.5,-3],[-4,0],[4,0],[-3.5,3],[0,3.5],[3.5,3],[-1.8,-1.2],[1.8,1.2],[-1.8,1.6],[1.8,-1.6]];
+const SEATS=(()=>{ const s=[]; for(let k=0;k<5;k++){ s.push([-2.8+k*1.4,-1.35,0]); s.push([-2.8+k*1.4,1.35,Math.PI]); } return s; })();
+
+/* =========================================================
+   glyph puzzle helpers (from the earlier prototypes)
+   ========================================================= */
+const GP=[]; for(let y=0;y<3;y++) for(let x=0;x<3;x++) GP.push([20+x*30,20+y*30]);
+const SEGS=[]; for(let i=0;i<9;i++) for(let j=i+1;j<9;j++){ const dy=Math.abs(Math.floor(i/3)-Math.floor(j/3)), dx=Math.abs(i%3-j%3); if(Math.max(dx,dy)===1) SEGS.push([i,j]); }
+function makeGlyph(r){
+  const n=3+Math.floor(r()*2), segs=[], pts=new Set();
+  const first=SEGS[Math.floor(r()*SEGS.length)]; segs.push(first); pts.add(first[0]); pts.add(first[1]);
+  while(segs.length<n){ const cand=SEGS.filter(s=>!segs.includes(s)&&(pts.has(s[0])||pts.has(s[1]))); const s=cand[Math.floor(r()*cand.length)]; segs.push(s); pts.add(s[0]); pts.add(s[1]); }
+  const free=[...Array(9).keys()].filter(p=>!pts.has(p));
+  const dot=(r()<.5&&free.length)?free[Math.floor(r()*free.length)]:-1;
+  return {segs,dot,sig:segs.map(s=>s.join('-')).sort().join('|')+'#'+dot};
+}
+function glyphSVG(g,size,color='currentColor',attrs=''){
+  const lines=g.segs.map(([a,b])=>`<line x1="${GP[a][0]}" y1="${GP[a][1]}" x2="${GP[b][0]}" y2="${GP[b][1]}"/>`).join('');
+  const dot=g.dot>=0?`<circle cx="${GP[g.dot][0]}" cy="${GP[g.dot][1]}" r="7" fill="${color}"/>`:'';
+  return `<svg ${attrs} viewBox="0 0 100 100" width="${size}" height="${size}" aria-hidden="true"><g stroke="${color}" stroke-width="9" stroke-linecap="round" fill="none">${lines}</g>${dot}</svg>`;
+}
+function drawGlyph(g,gl,x,y,size,color,lw=9){
+  g.save(); g.translate(x,y); g.scale(size/100,size/100); g.strokeStyle=color; g.fillStyle=color; g.lineWidth=lw; g.lineCap='round';
+  g.beginPath(); gl.segs.forEach(([a,b])=>{ g.moveTo(GP[a][0],GP[a][1]); g.lineTo(GP[b][0],GP[b][1]); }); g.stroke();
+  if(gl.dot>=0){ g.beginPath(); g.arc(GP[gl.dot][0],GP[gl.dot][1],7,0,TAU); g.fill(); } g.restore();
+}
+const COLORS6=[{id:'r',name:'赤',hex:'#d0453a'},{id:'b',name:'青',hex:'#3d6fd2'},{id:'g',name:'緑',hex:'#3f9a5a'},{id:'y',name:'黄',hex:'#e6c03c'},{id:'p',name:'紫',hex:'#8b52c4'},{id:'w',name:'白',hex:'#efebe1'}];
+const COUNT_KINDS=[{k:'portrait',name:'肖像画'},{k:'vase',name:'花瓶'},{k:'globe',name:'地球儀'},{k:'cage',name:'鳥かご'}];
+const COUNT_SLOTS={
+  portrait:[['hall','N',-3.5],['dining','S',3.5],['library','S',3.5],['guest','W',3.5],['entrance','N',-3.5],['kitchen','S',3]],
+  vase:[['hall',-4.6,4.6],['dining',4.8,-4.6],['guest',-4.6,-4.6],['entrance',4.6,-4.4],['library',4.6,-4.6],['kitchen',3.5,4.6]],
+  globe:[['library',-4.4,4.4],['hall',4.6,4.4],['guest',-4.4,4.4],['dining',-4.6,4.6],['entrance',-4.6,-4.4],['kitchen',4.6,-1]],
+  cage:[['guest',4.4,-4.4],['hall',-4.6,-4.4],['dining',4.6,4.6],['library',4.4,4.4],['entrance',4.6,4.4],['kitchen',-1,4.6]]
+};
+
+
+let TH=null;
+const V={renderer:null,scene:null,camera:null,canvas:null,ray:null,yaw:0,pitch:0,locked:false,water:null,targets:[],colliders:[],npc:{},doorMesh:{},lights:[],bob:0};
+function ctex(w,h,draw,rx=1,ry=1){ const c=document.createElement('canvas'); c.width=w; c.height=h; draw(c.getContext('2d'),w,h); const t=new TH.CanvasTexture(c); t.encoding=TH.sRGBEncoding; t.wrapS=t.wrapT=TH.RepeatWrapping; t.repeat.set(rx,ry); t.anisotropy=8; return t; }
+const TX={
+  paper:(base,stripe,dot)=>(rx,ry)=>ctex(256,256,(g,w,h)=>{ g.fillStyle=base; g.fillRect(0,0,w,h); g.fillStyle=stripe; g.fillRect(104,0,48,h); g.fillStyle=dot; for(let y=0;y<h;y+=64){ [[64,y+32],[192,y]].forEach(([x,yy])=>{ g.save(); g.translate(x,yy); g.rotate(Math.PI/4); g.fillRect(-8,-8,16,16); g.restore(); }); } },rx,ry),
+  wood:(rx,ry)=>ctex(512,512,(g,w,h)=>{ for(let row=0;row<8;row++){ let x=-rndU(0,200); while(x<w){ const len=rndU(160,300); g.fillStyle=`hsl(${rndU(20,28)},${rndU(32,42)}%,${rndU(15,22)}%)`; g.fillRect(x,row*64,len,64); g.strokeStyle='rgba(0,0,0,.35)'; g.lineWidth=2; g.strokeRect(x,row*64,len,64); x+=len; } } },rx,ry),
+  tile:(c1,c2)=>(rx,ry)=>ctex(256,256,(g,w,h)=>{ for(let y=0;y<4;y++) for(let x=0;x<4;x++){ g.fillStyle=(x+y)%2?c1:c2; g.fillRect(x*64,y*64,64,64); } g.strokeStyle='rgba(0,0,0,.35)'; g.lineWidth=2; for(let i=0;i<=4;i++){ g.beginPath(); g.moveTo(i*64,0); g.lineTo(i*64,h); g.moveTo(0,i*64); g.lineTo(w,i*64); g.stroke(); } },rx,ry),
+  stone:(rx,ry)=>ctex(256,256,(g,w,h)=>{ g.fillStyle='#16191c'; g.fillRect(0,0,w,h); for(let row=0;row<4;row++){ const off=row%2?64:0; for(let x=-128;x<w;x+=128){ g.fillStyle=`hsl(25,${rndU(6,12)}%,${rndU(18,25)}%)`; g.fillRect(x+off+3,row*64+3,122,58); } } },rx,ry),
+  label:(gl)=>ctex(128,96,(g,w,h)=>{ g.fillStyle='#efe6cf'; g.fillRect(0,0,w,h); g.strokeStyle='#8a7a5a'; g.lineWidth=4; g.strokeRect(4,4,w-8,h-8); drawGlyph(g,gl,24,8,80,'#2b2117',10); }),
+  sky:(kind)=>ctex(256,256,(g,w,h)=>{ if(kind==='sun'){ const gr=g.createLinearGradient(0,0,0,h); gr.addColorStop(0,'#7fbad0'); gr.addColorStop(1,'#f1d9a2'); g.fillStyle=gr; g.fillRect(0,0,w,h); g.fillStyle='#fff0b0'; g.beginPath(); g.arc(170,80,28,0,TAU); g.fill(); } else { g.fillStyle='#0a1530'; g.fillRect(0,0,w,h); g.fillStyle='#dfe7ff'; for(let i=0;i<40;i++){ g.beginPath(); g.arc(rndU(0,w),rndU(0,h),rndU(.6,1.8),0,TAU); g.fill(); } g.fillStyle='#f2ecd2'; g.beginPath(); g.arc(170,80,28,0,TAU); g.fill(); g.fillStyle='#0a1530'; g.beginPath(); g.arc(184,70,25,0,TAU); g.fill(); } g.strokeStyle='#3a2c20'; g.lineWidth=10; g.strokeRect(0,0,w,h); g.beginPath(); g.moveTo(w/2,0); g.lineTo(w/2,h); g.moveTo(0,h/2); g.lineTo(w,h/2); g.stroke(); }),
+  portrait:(seed)=>ctex(128,160,(g,w,h)=>{ const hue=(seed*67)%360; g.fillStyle=`hsl(${hue},25%,18%)`; g.fillRect(0,0,w,h); g.fillStyle=`hsl(${hue},20%,30%)`; g.beginPath(); g.ellipse(64,150,50,40,0,0,TAU); g.fill(); g.fillStyle='#8a6a52'; g.beginPath(); g.ellipse(64,70,24,30,0,0,TAU); g.fill(); g.fillStyle='#2b201a'; g.beginPath(); g.ellipse(64,48,26,14,0,Math.PI,0); g.fill(); }),
+  name:(text,color)=>ctex(256,64,(g,w,h)=>{ g.font='700 28px "Zen Kaku Gothic New",sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.lineWidth=6; g.strokeStyle='rgba(0,0,0,.8)'; g.strokeText(text,w/2,h/2); g.fillStyle=color; g.fillText(text,w/2,h/2); }),
+  plate:(order)=>ctex(512,128,(g,w,h)=>{ g.fillStyle='#c9a24e'; g.fillRect(0,0,w,h); order.forEach((k,i)=>{ g.fillStyle='#3a2a14'; drawIcon(g,k,24+i*122,14,100); }); }),
+  card:(holes)=>ctex(256,256,(g,w,h)=>{ g.fillStyle='#9aa3a3'; g.beginPath(); g.moveTo(40,0); g.lineTo(w,0); g.lineTo(w,h); g.lineTo(0,h); g.lineTo(0,40); g.closePath(); g.fill(); for(let i=0;i<16;i++){ const x=28+(i%4)*54, y=28+Math.floor(i/4)*54; if(holes.includes(i)){ g.fillStyle='#050505'; g.fillRect(x,y,36,36); } else { g.strokeStyle='rgba(0,0,0,.2)'; g.lineWidth=2; g.strokeRect(x,y,36,36); } } }),
+  grid:(d)=>ctex(256,256,(g,w,h)=>{ g.fillStyle='#4a4f52'; g.beginPath(); g.moveTo(40,0); g.lineTo(w,0); g.lineTo(w,h); g.lineTo(0,h); g.lineTo(0,40); g.closePath(); g.fill(); g.fillStyle='#e8e2d0'; g.font='600 40px "Shippori Mincho B1",serif'; g.textAlign='center'; g.textBaseline='middle'; d.forEach((v,i)=>g.fillText(String(v),46+(i%4)*54,48+Math.floor(i/4)*54)); })
+};
+function drawIcon(g,k,x,y,s){
+  g.save(); g.translate(x,y); g.scale(s/100,s/100);
+  if(k==='portrait'){ g.fillRect(14,8,72,84); g.fillStyle='#c9a24e'; g.fillRect(24,18,52,64); g.fillStyle='#3a2a14'; g.beginPath(); g.arc(50,42,12,0,TAU); g.fill(); g.fillRect(32,58,36,24); }
+  if(k==='vase'){ g.beginPath(); g.moveTo(38,10); g.lineTo(62,10); g.lineTo(58,26); g.quadraticCurveTo(84,50,64,90); g.lineTo(36,90); g.quadraticCurveTo(16,50,42,26); g.closePath(); g.fill(); }
+  if(k==='globe'){ g.beginPath(); g.arc(50,40,30,0,TAU); g.fill(); g.fillRect(46,70,8,14); g.fillRect(28,84,44,8); }
+  if(k==='cage'){ g.beginPath(); g.arc(50,46,30,Math.PI,0); g.lineTo(80,88); g.lineTo(20,88); g.closePath(); g.fill(); g.fillStyle='#c9a24e'; for(let i=0;i<5;i++) g.fillRect(28+i*10,40,4,44); g.fillStyle='#3a2a14'; g.fillRect(46,6,8,12); }
+  g.restore();
+}
+function iconImg(k,size){ const c=document.createElement('canvas'); c.width=c.height=100; const g=c.getContext('2d'); g.fillStyle='#2b2117'; drawIcon(g,k,0,0,100); return `<img src="${c.toDataURL()}" width="${size}" height="${size}" alt="${COUNT_KINDS.find(x=>x.k===k).name}">`; }
+const mat=(c,o={})=>new TH.MeshStandardMaterial(Object.assign({color:c,roughness:.8},o));
+const basic=c=>new TH.MeshBasicMaterial({color:c});
+const glow=(c,i=1.2)=>mat(c,{emissive:c,emissiveIntensity:i});
+function add(p,geo,m,x,y,z){ const me=new TH.Mesh(geo,m); me.position.set(x,y,z); p.add(me); return me; }
+const box=(p,w,h,d,m,x,y,z)=>add(p,new TH.BoxGeometry(w,h,d),m,x,y,z);
+const cyl=(p,rt,rb,h,m,x,y,z,seg=16)=>add(p,new TH.CylinderGeometry(rt,rb,h,seg),m,x,y,z);
+const sph=(p,r,m,x,y,z)=>add(p,new TH.SphereGeometry(r,14,10),m,x,y,z);
+const pln=(p,w,h,m,x,y,z)=>add(p,new TH.PlaneGeometry(w,h),m,x,y,z);
+function grp(p,obj,label,x,y,z,ry=0){ const g=new TH.Group(); g.position.set(x,y,z); g.rotation.y=ry; g.userData={obj,label}; p.add(g); V.targets.push(g); return g; }
+function collide(cx,cz,w,d){ V.colliders.push({x0:cx-w/2,x1:cx+w/2,z0:cz-d/2,z1:cz+d/2}); }
+function hit(x,z,r){ return V.colliders.some(c=>x>c.x0-r&&x<c.x1+r&&z>c.z0-r&&z<c.z1+r); }
+
+
+/* =========================================================
+   story: eras, plan sheet, case generation
+   ========================================================= */
+const BUTLER=2;
+const MASTER={id:10,name:'黒須 宗一郎',role:'当主',color:'#3a2e24',hair:'#c8c8c0',tr:{hand:'R',ring:false,tall:true,perfume:false,smoker:false,shoe:'big'}};
+const FUTURE_ROOMS=['hall','dining','kitchen','entrance'];
+const ERAS={
+  FA:{name:'未来・翌朝7時',ch:1,past:false,start:['guest',2,2,.5]},
+  P1:{name:'過去・夜20時10分',ch:1,past:true,start:['dining',-1,-2.2,Math.PI/2]},
+  FB:{name:'変わった未来・翌朝7時',ch:2,past:false,start:['guest',2,2,.5]},
+  P2:{name:'過去・夜23時',ch:2,past:true,start:['hall',0,3.4,0]},
+  FC:{name:'また変わった未来・翌朝7時',ch:3,past:false,start:['guest',2,2,.5]},
+  P3:{name:'過去・夜20時40分',ch:3,past:true,start:['dining',1.5,2.4,Math.PI/2]}
+};
+const ERA_TIME={FA:[7,0],P1:[20,10],FB:[7,0],P2:[23,0],FC:[7,0],P3:[20,40]};
+const ROMAN=['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'];
+function clockSVG(h,m,opt={}){
+  // a brass pocket watch: dial, numerals, hands that can be spun by CSS
+  const big=!!opt.big, ha=((h%12)+m/60)*30, ma=m*6;
+  let ticks=''; for(let i=0;i<60;i++){ const a=i*6*Math.PI/180, r1=i%5?84:80, r2=88; ticks+=`<line x1="${100+Math.sin(a)*r1}" y1="${100-Math.cos(a)*r1}" x2="${100+Math.sin(a)*r2}" y2="${100-Math.cos(a)*r2}" stroke="#3a2a18" stroke-width="${i%5?1:2.4}"/>`; }
+  let nums=''; if(big) ROMAN.forEach((t,i)=>{ const a=i*30*Math.PI/180; nums+=`<text x="${100+Math.sin(a)*68}" y="${100-Math.cos(a)*68+6}" text-anchor="middle" font-size="15" font-family="Shippori Mincho B1,serif" font-weight="600" fill="#2b2117">${t}</text>`; });
+  else [0,3,6,9].forEach(i=>{ const a=i*30*Math.PI/180; nums+=`<text x="${100+Math.sin(a)*66}" y="${100-Math.cos(a)*66+9}" text-anchor="middle" font-size="26" font-family="Shippori Mincho B1,serif" font-weight="800" fill="#2b2117">${ROMAN[i]}</text>`; });
+  return `<svg viewBox="0 -18 200 218" aria-hidden="true">
+    <rect x="90" y="-16" width="20" height="14" rx="3" fill="#c9a24e"/><circle cx="100" cy="-4" r="9" fill="none" stroke="#c9a24e" stroke-width="4"/>
+    <circle cx="100" cy="100" r="99" fill="#8a6424"/><circle cx="100" cy="100" r="95" fill="#d9b062"/><circle cx="100" cy="100" r="91" fill="#efe6cf"/>
+    ${ticks}${nums}
+    ${big?'<text x="100" y="142" text-anchor="middle" font-size="9" letter-spacing="3" font-family="Shippori Mincho B1,serif" fill="#8a6424">KUROSU</text>':''}
+    <g class="hand hh" ><line x1="100" y1="100" x2="${100+Math.sin(ha*Math.PI/180)*44}" y2="${100-Math.cos(ha*Math.PI/180)*44}" stroke="#1a120c" stroke-width="7" stroke-linecap="round"/></g>
+    <g class="hand hm"><line x1="100" y1="100" x2="${100+Math.sin(ma*Math.PI/180)*70}" y2="${100-Math.cos(ma*Math.PI/180)*70}" stroke="#1a120c" stroke-width="4" stroke-linecap="round"/></g>
+    ${big?'<g class="hand hs"><line x1="100" y1="112" x2="100" y2="22" stroke="#a8261c" stroke-width="1.6"/></g>':''}
+    <circle cx="100" cy="100" r="6" fill="#c9a24e"/></svg>`;
+}
+const GLIMPSE_OF={FA:'ring',P1:'tall',FB:'hand',P2:'shoe',FC:'perfume',P3:'ring',FX:'tall'};
+function generateCase(code){
+  const R=mulberry32(hashStr('story:'+code));
+  for(let attempt=0;attempt<1500;attempt++){
+    const sus=CAST.map(c=>({...c,tr:{hand:R()<.4?'L':'R',ring:R()<.5,tall:R()<.5,perfume:R()<.5,smoker:R()<.45,shoe:R()<.5?'big':'small'}}));
+    const pool=sus.filter(s=>s.id!==BUTLER), C=pool[Math.floor(R()*pool.length)];
+    const same=(s,k)=>s.tr[k]===C.tr[k];
+    const A=sus.filter(s=>s.id!==BUTLER&&same(s,'hand')&&same(s,'perfume')&&same(s,'shoe'));
+    if(A.length<2||A.length>4) continue;
+    const B=A.filter(s=>same(s,'ring')&&same(s,'tall'));
+    if(B.length<1||B.length>2) continue;
+    if(B.filter(s=>same(s,'smoker')).length!==1) continue;
+    if(sus.filter(s=>s.tr.smoker).length<2||sus.filter(s=>!s.tr.smoker).length<3) continue;
+    // 20:45 alibis: honest people the evidence cannot rule out get one (testimony pair or a record)
+    const honest=sus.filter(s=>s!==C);
+    const needs=shuffle(honest.filter(s=>A.includes(s)),R), rest=shuffle(honest.filter(s=>!A.includes(s)),R);
+    const groups=[]; needs.forEach(s=>{ const p=rest.shift(); groups.push(p?[s,p]:[s]); });
+    while(rest.length>=2&&R()<.65) groups.push([rest.shift(),rest.shift()]);
+    rest.forEach(s=>groups.push([s]));
+    const AROOMS=['hall','dining','library','kitchen','entrance'];
+    const alibiRoom={}; groups.forEach(g=>{ const room=AROOMS[Math.floor(R()*AROOMS.length)]; g.forEach(s=>alibiRoom[s.id]=room); });
+    const singles=groups.filter(g=>g.length===1).map(g=>g[0]);
+    const unclearedNeeds=needs.filter(s=>groups.find(g=>g.includes(s)).length===1);
+    if(unclearedNeeds.length>2) continue;
+    const noteWho=[...unclearedNeeds,...shuffle(singles.filter(s=>!unclearedNeeds.includes(s)),R)].slice(0,2);
+    if(noteWho.length<unclearedNeeds.length) continue;
+    const claimRoom=AROOMS[Math.floor(R()*AROOMS.length)];
+    const claimWith=singles.length&&R()<.6?singles[Math.floor(R()*singles.length)]:null;
+    const futurePlace={}; sus.forEach(s=>{ futurePlace[s.id]=s.tr.smoker?'library':FUTURE_ROOMS[Math.floor(R()*FUTURE_ROOMS.length)]; });
+    const nightPlace={}; sus.forEach(s=>{ nightPlace[s.id]=s.id===BUTLER?'kitchen':['hall','hall','library','dining'][Math.floor(R()*4)]; });
+    // puzzles
+    const cab=String(1000+Math.floor(R()*9000));
+    const counts={}; COUNT_KINDS.forEach(k=>counts[k.k]=1+Math.floor(R()*4));
+    const placed={}; COUNT_KINDS.forEach(k=>placed[k.k]=shuffle(COUNT_SLOTS[k.k].filter(sl=>sl[0]!=='guest'),R).slice(0,counts[k.k]));
+    const plate=shuffle(COUNT_KINDS.map(k=>k.k),R);
+    const greenhouse=plate.map(k=>counts[k]).join('');
+    const keySpot=['vase','drawer','bed','cage'][Math.floor(R()*4)];
+    const glyphs=[], sigs=new Set(); while(glyphs.length<8){ const g=makeGlyph(R); if(!sigs.has(g.sig)){ sigs.add(g.sig); glyphs.push(g); } }
+    const sky=R()<.5?'sun':'moon';
+    const sunT=[],moonT=[]; for(let i=0;i<8;i++){ const a=Math.floor(R()*10); let b; do{ b=Math.floor(R()*10); }while(b===a); sunT.push(a); moonT.push(b); }
+    const jars=shuffle(COLORS6,R), gi=shuffle([0,1,2,3,4,5,6,7],R), jarGlyph={}; jars.forEach((c,i)=>jarGlyph[c.id]=gi[i]);
+    const candles=shuffle(COLORS6,R), lit=new Set(shuffle([0,1,2,3,4,5],R).slice(0,4)), order=candles.filter((c,i)=>lit.has(i));
+    const box=order.map(c=>(sky==='sun'?sunT:moonT)[jarGlyph[c.id]]).join('');
+    const sunOrder=shuffle([...Array(8).keys()],R), moonOrder=shuffle([...Array(8).keys()],R);
+    const grid=Array.from({length:16},()=>Math.floor(R()*10)), holes=shuffle([...Array(16).keys()],R).slice(0,4).sort((a,b)=>a-b);
+    const cellar=holes.map(i=>grid[i]).join('');
+    // evidence
+    const ev={};
+    const trEv=(id,type,title,text,k)=>{ ev[id]={id,type,title,text,pred:{kind:'trait',k,v:C.tr[k]},claim:CULPRIT_TEXT[k][String(C.tr[k])]}; };
+    trEv('L1','物証','書斎の机の血の跡',C.tr.hand==='L'?'机の端に、血を拭った跡がある。指の向きからして、左手で拭ったものだ。':'机の端に、血を拭った跡がある。指の向きからして、右手で拭ったものだ。','hand');
+    trEv('L2','物証','温室の靴跡',C.tr.shoe==='big'?'執事が倒れているそばの泥に、大きな靴跡が残っている。':'執事が倒れているそばの泥に、小さな靴跡が残っている。','shoe');
+    trEv('W1','目撃','当主の証言',C.tr.perfume?'「燭台を振り上げた影から、甘い香水の匂いがした」':'「燭台を振り上げた影からは、香水の匂いひとつしなかった」','perfume');
+    trEv('H1','目撃','執事の証言',C.tr.smoker?'「あの晩、温室へ向かう廊下ですれ違った方から、煙草の匂いがいたしました」':'「あの晩、廊下ですれ違った方からは、煙草の匂いはいたしませんでした。吸う方なら必ず分かります」','smoker');
+    const GL={ring:[C.tr.ring?'振り下ろされる腕の先で、指輪が鈍く光った。':'振り下ろされる手には、指輪ひとつなかった。'],tall:[C.tr.tall?'暗がりに立つ影は、見上げるほど大きかった。':'暗がりに立つ影は、思ったより小柄だった。'],hand:[C.tr.hand==='L'?'燭台を握っていたのは、左手だった。':'燭台を握っていたのは、右手だった。'],shoe:[C.tr.shoe==='big'?'倒れた目の前に、大きな靴があった。':'倒れた目の前に、小さな靴があった。'],perfume:[C.tr.perfume?'影が覆いかぶさったとき、甘い香水の匂いがした。':'影からは、何の匂いもしなかった。']};
+    Object.keys(GL).forEach(k=>trEv('G_'+k,'物証','襲われた瞬間に見たもの',GL[k][0],k));
+    const noteSrc=[{id:'N1',title:'玄関の記録簿'},{id:'N2',title:'厨房の注文伝票'}];
+    noteWho.forEach((s,i)=>{ const n=noteSrc[i]; ev[n.id]={id:n.id,type:'記録',title:n.title,text:i===0?`20時40分〜21時、${s.name}が玄関で嵐の様子を見ていた、と執事の字で記されている。`:`20時45分、${s.name}が厨房で湯を受け取った、と伝票に書かれている。`,pred:{kind:'clear',who:[s.id]},claim:`${s.name}は犯行時刻に現場にいなかった`}; });
+    ev.D1={id:'D1',type:'記録',title:'執事の死',text:'変わった朝、執事の灰田が温室で殺されていた。',pred:{kind:'clear',who:[BUTLER]},claim:'灰田は犯人ではない'};
+    ev.M1={id:'M1',type:'記録',title:'医師のメモ',text:'「当主の体から、強い眠り薬が出た。いつものブランデーに混ぜられていたのだろう」',pred:null,claim:'犯人は当主を眠らせてから襲った'};
+    ev.K1={id:'K1',type:'記録',title:'酒棚の番号札',text:`こじ開けられた酒棚の内側に、執事の字で番号札が貼ってある：「${cab}」`,pred:null,claim:'過去の酒棚は、この番号で開くはず'};
+    const testi={};
+    sus.forEach(s=>{ if(s===C) testi[s.id]={room:claimRoom,with:claimWith?claimWith.id:null}; else { const g=groups.find(g=>g.includes(s)); const p=g.find(o=>o!==s); testi[s.id]={room:alibiRoom[s.id],with:p?p.id:null}; } });
+    return {code,sus,ci:C.id,testi,ev,futurePlace,nightPlace,alibiRoom,keySpot,
+      puzzle:{counts,placed,plate,glyphs,sky,sunT,moonT,jars,jarGlyph,candles,lit,order,sunOrder,moonOrder,grid,holes},
+      answers:{CAB:cab,C:greenhouse,BOX:box,X:cellar}};
+  }
+  return null;
+}
+const PLAN=[
+  {id:'P1',ver:1,q:'眠らせる方法',opts:['紅茶に毒を盛る','ブランデーに眠り薬','香を焚く','注射を打つ'],ans:'ブランデーに眠り薬',need:()=>S.ev.includes('M1')||S.plan.P1,hint:'当主の体から何が出たか（食堂を調べる）'},
+  {id:'P2',ver:1,q:'凶器',opts:['燭台','ナイフ','ロープ','火かき棒'],ans:'燭台',need:()=>S.flags.metMasterB,hint:'襲われかけた本人に聞けたら'},
+  {id:'P3',ver:2,q:'見られた相手',opts:['灰田','小夜','権藤','白石 医師'],ans:'灰田',need:()=>S.flags.metMasterB&&S.planV>=2,hint:'当主と話す。ブランデーを運ぶのは誰か'},
+  {id:'P4',ver:2,q:'始末する場所',opts:['温室','地下セラー','厨房','図書室'],ans:'温室',need:()=>S.flags.metMasterB&&S.planV>=2,hint:'その人は朝、どこにいると言われていたか'},
+  {id:'P5',ver:3,q:'決行の部屋',opts:['書斎','食堂','客間','図書室'],ans:'書斎',need:()=>S.flags.metMasterC&&S.planV>=3,hint:'当主はあの夜、どこにいたか'},
+  {id:'P6',ver:3,q:'逃げ道',opts:['地下セラー','玄関','温室の窓','屋根裏'],ans:'地下セラー',need:()=>S.flags.metButlerC&&S.planV>=3,hint:'屋敷から水の上へ出る道を、執事なら知っている'}
+];
+function planText(){
+  const b=id=>S.plan[id]?`<b class="filled">${esc(S.plan[id])}</b>`:`<span class="blank">［ ${PLAN.find(p=>p.id===id).q} ］</span>`;
+  let t=`<p class="letter plan">二十時三十分、あの男は書斎へ入る。\nまず ${b('P1')} で眠らせる。\n眠ったら ${b('P2')} で。\n誰にも見られてはならない。</p>`;
+  if(S.planV>=2) t+=`<p class="letter plan">（裏に、乱れた字で書き足されている）\n眠り薬が効かず、仕留めそこなった。\nあの晩、ブランデーを運んだ ${b('P3')} に見られた。\n夜のうちに ${b('P4')} で始末する。</p>`;
+  if(S.planV>=3) t+=`<p class="letter plan">（別の紙。几帳面な字で）\n二度もしくじるなら、最初の夜に戻って ${b('P5')} で直接やる。\nもし見つかったら ${b('P6')} から舟で逃げる。</p>`;
+  return t;
+}
+
+/* =========================================================
+   state
+   ========================================================= */
+let K=null;
+const S={};
+function resetState(){
+  Object.assign(S,{era:'FA',mode:'solo',role:'solo',visits:{},plan:{},planV:0,ev:[],known:{},cross:{},heard:{},flags:{},attacks:0,leaps:0,startedAt:Date.now(),
+    playing:false,paused:false,visitOpen:new Set(),armed:null,waiting:null,ended:false,carved:'',carvedT:0,hasBoxKey:false,hasStudyKey:false,hidden:false,smokeSeen:false,keyKnown:false,gotGreenKey:false});
+  K.sus.forEach(s=>S.known[s.id]={});
+}
+const F=k=>!!S.flags[k];
+function setFlag(k,quiet){ if(S.flags[k]) return; S.flags[k]=true; pushSync(); if(!quiet) onFlag(k,true); }
+function addEv(id,quiet){ if(!K.ev[id]||S.ev.includes(id)) return false; S.ev.push(id); if(!quiet) toast(`手帳に記録：${K.ev[id].title}`); return true; }
+function learn(sid,k,v,why,quiet){ if(S.known[sid][k]!==undefined) return; S.known[sid][k]=v; pushSync(); if(!quiet) toast(`${K.sus[sid].name}：${TRAITS.find(t=>t.k===k).label}は${TV(k,v)}${why?`（${why}）`:''}`); }
+function excludes(evId,sid){ const e=K.ev[evId]; if(!e||!e.pred) return false; if(e.pred.kind==='clear') return e.pred.who.includes(sid); const kv=S.known[sid][e.pred.k]; return kv!==undefined&&String(kv)!==String(e.pred.v); }
+function remainingSuspects(){ return K.sus.filter(s=>!S.cross[s.id]||S.cross[s.id].del); }
+const isCrossed=sid=>S.cross[sid]&&!S.cross[sid].del;
+const pastEra=()=>F('keyHidden')?'P3':F('pour')?'P2':'P1';
+
+function doorState(id){
+  const e=S.era, past=ERAS[e].past;
+  if(id==='G') return past||S.keyKnown?'open':'key';
+  if(id==='S'){ if(!past) return 'open'; if(e==='P3'&&S.hasStudyKey) return 'open'; return 'closed'; }
+  if(id==='C'){ if(e==='P1') return 'open'; if(e==='P2') return 'closed'; if(e==='FC') return S.visitOpen.has('C')?'open':'key2'; return S.visitOpen.has('C')?'open':'keypad'; }
+  if(id==='X'){ if(e==='FC'&&S.role==='future') return S.visitOpen.has('X')?'open':'keypad'; return 'closed'; }
+  return 'closed';
+}
+
+/* =========================================================
+   building an era
+   ========================================================= */
+const ROOM_LOOK={
+  hall:{wall:TX.paper('#4a1e22','#55242a','#6a3036'),floor:'wood',light:0xffc890},
+  dining:{wall:TX.paper('#1e3a2c','#234435','#2c5440'),floor:'wood',light:0xffd0a0},
+  library:{wall:TX.paper('#3a2a1a','#45321f','#5a4228'),floor:'wood',light:0xffb870},
+  guest:{wall:TX.paper('#1e2a44','#23314f','#2e3e60'),floor:'wood',light:0xd8d8ff},
+  kitchen:{wall:TX.tile('#d8d2c4','#c8c0b0'),floor:TX.tile('#3a3a38','#2a2a28'),light:0xfff0d0},
+  entrance:{wall:TX.paper('#3a3430','#423a35','#554a42'),floor:TX.tile('#2a2420','#3a322c'),light:0xffd8a8},
+  study:{wall:TX.paper('#1e2e29','#23362e','#2b4236'),floor:'wood',light:0xffa860},
+  conservatory:{wall:TX.tile('#2a3a34','#24322c'),floor:TX.tile('#5a5a52','#4a4a44'),light:0xc8ffd8},
+  cellar:{wall:TX.stone,floor:TX.stone,light:0xffa050}
+};
+function buildMansion(){
+  const s=V.scene=new TH.Scene(), past=ERAS[S.era].past;
+  s.background=new TH.Color(past?0x07060a:0x0e0c0a); s.fog=new TH.Fog(past?0x07060a:0x14110e,10,34);
+  V.targets=[]; V.colliders=[]; V.npc={}; V.doorMesh={}; V.lights=[];
+  s.add(new TH.HemisphereLight(past?0x9a7a5a:0xb0a898,0x14100c,past?.42:.5)); s.add(new TH.AmbientLight(past?0x50404a:0x5a5450,.3)); s.add(V.camera);
+  const H=3.2, T=.3;
+  for(const id in ROOMS){ const c=rc(id), L=ROOM_LOOK[id];
+    const fm=L.floor==='wood'?new TH.MeshStandardMaterial({map:TX.wood(3,3),roughness:.6}):new TH.MeshStandardMaterial({map:L.floor(4,4),roughness:.7});
+    const f=pln(s,CELL,CELL,fm,c.x,0,c.z); f.rotation.x=-Math.PI/2; f.userData.floor=true;
+    const ce=pln(s,CELL,CELL,mat('#15110e'),c.x,H,c.z); ce.rotation.x=Math.PI/2;
+    const l=new TH.PointLight(past?L.light:0xeae2d2,past?1:.85,15,1.4); l.position.set(c.x,2.7,c.z); s.add(l); V.lights.push({l,b:past?1:.85,f:past?.18:0});
+    cyl(s,.25,.18,.12,glow(past?'#ffe2b0':'#efe8dc',.9),c.x,H-.08,c.z);
+  }
+  const doorAt=(a,b)=>DOORS.find(d=>(d[0]===a&&d[1]===b)||(d[0]===b&&d[1]===a));
+  const roomByIJ=(i,j)=>Object.keys(ROOMS).find(k=>ROOMS[k].i===i&&ROOMS[k].j===j);
+  const wm=(id,len)=>new TH.MeshStandardMaterial({map:ROOM_LOOK[id].wall(len/1.2,H/1.2),roughness:.9});
+  const seg=(x0,z0,x1,z1,matA,matB)=>{
+    const w=Math.max(Math.abs(x1-x0),T), d=Math.max(Math.abs(z1-z0),T), cx=(x0+x1)/2, cz=(z0+z1)/2;
+    const m=new TH.Mesh(new TH.BoxGeometry(w,H,d),[matA,matA,mat('#1a1410'),mat('#1a1410'),matA,matA]); m.position.set(cx,H/2,cz); s.add(m); collide(cx,cz,w,d);
+    if(matB){ const isX=Math.abs(x1-x0)<.01;
+      const p=pln(s,isX?d:w,H,matA,cx+(isX?T/2+.01:0),H/2,cz+(isX?0:T/2+.01)); p.rotation.y=isX?Math.PI/2:0;
+      const q=pln(s,isX?d:w,H,matB,cx-(isX?T/2+.01:0),H/2,cz-(isX?0:T/2+.01)); q.rotation.y=isX?-Math.PI/2:Math.PI; }
+  };
+  for(const xv of [-18,-6,6,18]) for(const j of [-1,0,1]){
+    const iL=Math.round(xv/CELL-.5), A=roomByIJ(iL,j), B=roomByIJ(iL+1,j), z0=j*CELL-CELL/2, z1=j*CELL+CELL/2;
+    const d=A&&B?doorAt(A,B):null, mA=wm(B||A,CELL), mB=A&&B?wm(A,CELL):null;
+    if(d){ seg(xv,z0,xv,j*CELL-1.1,mA,mB); seg(xv,j*CELL+1.1,xv,z1,mA,mB); doorFrame(d,xv,j*CELL,'x'); } else seg(xv,z0,xv,z1,mA,mB);
+  }
+  for(const zv of [-18,-6,6,18]) for(const i of [-1,0,1]){
+    const jT=Math.round(zv/CELL-.5), A=roomByIJ(i,jT), B=roomByIJ(i,jT+1), x0=i*CELL-CELL/2, x1=i*CELL+CELL/2;
+    const d=A&&B?doorAt(A,B):null, mA=wm(B||A,CELL), mB=A&&B?wm(A,CELL):null;
+    if(d){ seg(x0,zv,i*CELL-1.1,zv,mA,mB); seg(i*CELL+1.1,zv,x1,zv,mA,mB); doorFrame(d,i*CELL,zv,'z'); } else seg(x0,zv,x1,zv,mA,mB);
+  }
+  V.water=pln(s,CELL*3,CELL*3,new TH.MeshStandardMaterial({color:'#1f6a80',transparent:true,opacity:.45,roughness:.1,metalness:.3,depthWrite:false}),0,.07,0);
+  V.water.rotation.x=-Math.PI/2; V.water.userData.noray=true; V.water.visible=false;
+  furnish(); placePeople();
+  $('#tint').className='tint '+(past?'past':'future');
+}
+function doorFrame(d,x,z,axis){
+  const s=V.scene, fm=mat('#2a1b12'), g=new TH.Group(); g.position.set(x,0,z); if(axis==='z') g.rotation.y=Math.PI/2; s.add(g);
+  box(g,.4,.18,2.4,fm,0,2.3,0); box(g,.4,2.3,.12,fm,0,1.15,-1.15); box(g,.4,2.3,.12,fm,0,1.15,1.15);
+  const id=d[2]; if(!id) return;
+  const st=doorState(id), info=LOCK_INFO[id];
+  const pv=new TH.Group(); pv.position.set(0,0,-1.05); g.add(pv);
+  box(pv,.08,2.2,2.1,mat('#4a3020',{roughness:.55}),0,1.1,1.05);
+  if(st==='open'){ pv.rotation.y=-1.4; return; }
+  const fromC=rc(info.from), side=axis==='x'?Math.sign(fromC.x-x):Math.sign(fromC.z-z);
+  const pad=grp(g,'door:'+id,info.name,(axis==='x'?side:-side)*.24,1.3,.6);
+  box(pad,.06,.32,.22,mat('#151515'),0,0,0); box(pad,.07,.04,.16,glow(st==='keypad'?'#efb65a':'#8a8a8a',.7),0,.11,0);
+  const c={x0:x-(axis==='x'?.2:1.1),x1:x+(axis==='x'?.2:1.1),z0:z-(axis==='x'?1.1:.2),z1:z+(axis==='x'?1.1:.2)};
+  V.colliders.push(c); V.doorMesh[id]={pv,pad,collider:c};
+}
+function openDoorMesh(id){ const d=V.doorMesh[id]; if(!d) return; d.pv.rotation.y=-1.4; d.pad.visible=false; const i=V.colliders.indexOf(d.collider); if(i>=0) V.colliders.splice(i,1); const t=V.targets.indexOf(d.pad); if(t>=0) V.targets.splice(t,1); }
+function at(id,lx,lz){ const c=rc(id); return [c.x+lx,c.z+lz]; }
+function wallSpot(room,wall,off){ const c=rc(room), h=5.82; if(wall==='N') return {x:c.x+off,z:c.z-h,ry:0}; if(wall==='S') return {x:c.x+off,z:c.z+h,ry:Math.PI}; if(wall==='W') return {x:c.x-h,z:c.z+off,ry:Math.PI/2}; return {x:c.x+h,z:c.z+off,ry:-Math.PI/2}; }
+function furnish(){
+  const s=V.scene, P=K.puzzle, e=S.era, past=ERAS[e].past;
+  const wood=mat('#4a311f',{roughness:.6}), dark=mat('#2a1b12'), brass=mat('#c9a24e',{metalness:.7,roughness:.3});
+  // hall
+  { const [x,z]=at('hall',-4,-5.5); const ck=grp(s,'clock','柱時計',x,0,z); box(ck,.6,2.1,.35,mat('#4a2f1e'),0,1.05,0); add(ck,new TH.CircleGeometry(.2,24),basic('#e9dcc0'),0,1.65,.18); box(ck,.3,.7,.02,mat('#1a110b'),0,.8,.18); collide(x,z,.7,.5); }
+  { const [x,z]=at('hall',3.2,-5.45); const cg=grp(s,'candles','燭台のろうそく',x,0,z);
+    box(cg,2.6,1.1,.5,mat('#3d2c22'),0,.55,0); box(cg,2.9,.08,.6,mat('#5b3f2b'),0,1.14,.02);
+    P.candles.forEach((c,i)=>{ const cx=-1.05+i*.42, h=.18+((i*5)%3)*.06; cyl(cg,.04,.04,h,mat(c.hex,{roughness:.6}),cx,1.18+h/2,.08,12); if(past&&P.lit.has(i)){ const fl=sph(cg,.028,basic('#ffd27a'),cx,1.18+h+.05,.08); fl.scale.y=2; } });
+    collide(x,z,2.9,.6); }
+  { const [x,z]=at('hall',0,1.6); const bd=grp(s,'board','容疑者ボード（手帳を開く）',x,0,z);
+    box(bd,2.2,.06,1.1,wood,0,.82,0); [[-1,-.45],[1,-.45],[-1,.45],[1,.45]].forEach(([a,b])=>box(bd,.06,.8,.06,dark,a,.4,b));
+    for(let i=0;i<10;i++){ const pc=pln(bd,.16,.2,basic(K.sus[i].color),-.85+(i%5)*.42,.86,-.2+Math.floor(i/5)*.4); pc.rotation.x=-Math.PI/2; } collide(x,z,2.3,1.2); }
+  // dining + liquor cabinet
+  { const [x,z]=at('dining',0,0); box(s,6.4,.08,2,wood,x,.78,z); [[-3,-.8],[3,-.8],[-3,.8],[3,.8]].forEach(([a,b])=>box(s,.08,.76,.08,dark,x+a,.38,z+b));
+    for(let k=0;k<10;k++){ const se=SEATS[k]; box(s,.45,.05,.45,mat('#5a2331'),x+se[0],.45,z+se[1]+(se[1]<0?-.35:.35)); if(e==='P1') sph(s,.12,mat('#efe9df',{roughness:.3}),x+se[0],.83,z+se[1]*.55).scale.y=.15; }
+    if(e==='P1') box(s,.45,.05,.45,mat('#5a2331'),x-3.9,.45,z);
+    collide(x,z,6.6,2.2);
+    const w=wallSpot('dining','N',3); const cb=grp(s,'cabinet','酒棚',w.x,0,w.z,w.ry);
+    box(cb,1.4,1.8,.5,mat('#3a2418'),0,.9,.25);
+    const closed=(e==='P1'&&!F('cabOpen'))||(past&&e!=='P1')||e==='FB'||e==='FC';
+    if(closed){ box(cb,.62,1.4,.04,mat('#5a3a22'),-.33,1,.52); box(cb,.62,1.4,.04,mat('#5a3a22'),.33,1,.52); box(cb,.12,.18,.04,mat('#151515'),0,1.1,.56); }
+    else { const dl=box(cb,.62,1.4,.04,mat('#5a3a22'),-.9,1,.75); dl.rotation.y=1.2; cyl(cb,.08,.1,.3,new TH.MeshStandardMaterial({color:e==='P1'&&!F('pour')?'#6a3a10':'#cfe3e3',transparent:true,opacity:.75}),0,1.25,.3); if(e==='FA') box(cb,.12,.08,.01,mat('#efe6cf'),.3,1.5,.5); }
+    collide(w.x,w.z+.25,1.5,.6);
+    if(e==='FA'){ const nt=grp(s,'docnote','医師のメモ',x+2.4,.84,z+.3); box(nt,.22,.02,.16,mat('#efe6cf'),0,0,0); } }
+  // library
+  { const bc=['#6a2a20','#2a3d5a','#3a4a2a','#5a4a2a','#4a2a4a','#2a2a2a'];
+    const shelf=(x,z,ry,len)=>{ const g=grp(s,'shelf-lib','本棚',x,0,z,ry); box(g,len,2.4,.42,mat('#3a2618'),0,1.2,0);
+      [.3,.85,1.4,1.95].forEach(y=>{ let p=-len/2+.1; while(p<len/2-.1){ const bw=rndU(.04,.08), bh=rndU(.24,.4); box(g,bw,bh,.3,mat(bc[Math.floor(rndU(0,bc.length))]),p+bw/2,y+bh/2,.04); p+=bw+.006; } }); };
+    const [x1,z1]=at('library',-3,-5.6); shelf(x1,z1,0,4.5); collide(x1,z1,4.6,.5);
+    const [x2,z2]=at('library',-5.6,-3); shelf(x2,z2,Math.PI/2,4); collide(x2,z2,.5,4.1);
+    const [x3,z3]=at('library',-1.2,-2.4); box(s,1.6,.06,.9,wood,x3,.78,z3); box(s,1.5,.74,.8,dark,x3,.37,z3); collide(x3,z3,1.7,1);
+    const bk=grp(s,'book','古い本',x3+.3,.81,z3,.2); box(bk,.34,.07,.25,mat('#e8dcc0'),0,.035,0); box(bk,.36,.012,.27,mat('#7a2630'),0,.075,0);
+    const [x4,z4]=at('library',3,3.6); const ash=grp(s,'ashtray','灰皿',x4,0,z4); cyl(ash,.3,.3,.04,wood,0,.6,0); cyl(ash,.04,.06,.58,dark,0,.29,0); cyl(ash,.12,.1,.04,mat('#888',{metalness:.6}),0,.64,0); collide(x4,z4,.6,.6); }
+  // guest room (start room in the future)
+  { const [x,z]=at('guest',3.6,2.5); const bed=grp(s,'bed','ベッド',x,0,z); box(bed,2.2,.5,3,mat('#d8d0c0'),0,.3,0); box(bed,2.3,.9,.12,dark,0,.7,1.5); collide(x,z,2.3,3.1);
+    const w=wallSpot('guest','E',-2.5); const wd=grp(s,'window','窓',w.x,1.7,w.z,w.ry); box(wd,1.4,1.2,.08,mat('#3a2c20'),0,0,0); pln(wd,1.2,1,new TH.MeshBasicMaterial({map:TX.sky(P.sky)}),0,0,.05);
+    const [dx,dz]=at('guest',-3.5,4.8); const dr=grp(s,'drawer','引き出しつきの棚',dx,0,dz); box(dr,1.2,.9,.5,wood,0,.45,0); box(dr,1.1,.2,.02,dark,0,.6,.26); collide(dx,dz,1.3,.6);
+    const [vx,vz]=at('guest',-4.6,-4.6); const vs=grp(s,'vase','花瓶',vx,0,vz); cyl(vs,.25,.25,.7,wood,0,.35,0); add(vs,new TH.SphereGeometry(.18,12,10),mat('#3a6a8a',{roughness:.3}),0,.9,0).scale.y=1.4; collide(vx,vz,.5,.5);
+    const [cx,cz]=at('guest',4.4,-4.4); const cg=grp(s,'cage','鳥かご',cx,0,cz); cyl(cg,.03,.03,1.2,dark,0,.6,0); add(cg,new TH.CylinderGeometry(.25,.25,.5,10,1,true),new TH.MeshStandardMaterial({color:'#c9a24e',metalness:.7,wireframe:true}),0,1.45,0); collide(cx,cz,.5,.5);
+    const [plx,plz]=at('guest',2,-5.75); const pl=grp(s,'plate',past?'温室の扉の錠の絵':'温室の錠の横の刻み',plx,0,plz,0); box(pl,1.2,.36,.04,brass,0,1.6,0); pln(pl,1.1,.28,new TH.MeshStandardMaterial({map:TX.plate(P.plate),metalness:.4,roughness:.4}),0,1.6,.025);
+    if(!past&&S.carved) pln(pl,.9,.22,new TH.MeshBasicMaterial({map:TX.name(S.carved,'#d9c08a'),transparent:true}),0,1.25,.03); }
+  // kitchen: spice jars + the butler's key box
+  { const [x,z]=at('kitchen',-5.4,1); box(s,1.1,.9,6,mat('#5a5048'),x,.45,z); box(s,1.15,.06,6.05,mat('#8a8278'),x,.92,z); collide(x,z,1.2,6.1);
+    const [sx,sz]=at('kitchen',-3,-5.65); const sh=grp(s,'jars','香辛料の瓶の棚',sx,0,sz); box(sh,3,.05,.4,wood,0,1.3,0); box(sh,3,.05,.4,wood,0,.6,0);
+    P.jars.forEach((c,i)=>{ const jx=-1.2+i*.48; cyl(sh,.13,.13,.3,new TH.MeshStandardMaterial({color:'#cfe3e3',transparent:true,opacity:.35}),jx,1.48,0); cyl(sh,.11,.11,.18,mat(c.hex),jx,1.42,0); cyl(sh,.14,.14,.05,mat('#8a6a4a'),jx,1.65,0); pln(sh,.16,.12,new TH.MeshStandardMaterial({map:TX.label(P.glyphs[P.jarGlyph[c.id]])}),jx,1.45,.135); });
+    collide(sx,sz,3.1,.5);
+    const kb=wallSpot('kitchen','N',2.5); const kbox=grp(s,'keybox','執事の鍵箱',kb.x,1.5,kb.z,kb.ry); box(kbox,.6,.7,.15,mat('#3a2418'),0,0,.08); box(kbox,.1,.12,.02,brass,0,0,.17);
+    if(!past){ const [slx,slz]=at('kitchen',-5.2,-1); const slip=grp(s,'slip','注文伝票',slx,.95,slz,0); const sp=pln(slip,.2,.15,mat('#efe6cf'),0,0,0); sp.rotation.x=-Math.PI/2; }
+    const [ox,oz]=at('kitchen',2,-4.8); box(s,1.6,.9,.8,mat('#2a2a2a',{metalness:.5}),ox,.45,oz); collide(ox,oz,1.7,.9); }
+  // entrance
+  { const [x,z]=at('entrance',-3.2,4.9); const sr=grp(s,'shoes','靴棚',x,0,z); box(sr,2.6,1,.5,wood,0,.5,0); for(let i=0;i<10;i++) box(sr,.14,.08,.28,mat(K.sus[i].tr.shoe==='big'?'#2a1a10':'#5a3a22'),-1.1+(i%5)*.55,.75+Math.floor(i/5)*.2,.05).scale.z=K.sus[i].tr.shoe==='big'?1.3:.8; collide(x,z,2.7,.6);
+    const [lx,lz]=at('entrance',3,2.6); box(s,1.4,.06,.8,wood,lx,.82,lz); box(s,1.3,.78,.7,dark,lx,.39,lz); collide(lx,lz,1.5,.9);
+    if(!past){ const lg=grp(s,'ledger','記録簿',lx,.86,lz); box(lg,.4,.04,.3,mat('#3a2a5a'),0,0,0); }
+    const fd=wallSpot('entrance','S',0); const md=grp(s,'frontdoor','玄関の扉',fd.x,0,fd.z,fd.ry); box(md,2.2,2.6,.12,mat('#3a2418'),0,1.3,0); }
+  // study
+  { const [x,z]=at('study',0,-2.5); box(s,2,.06,1,wood,x,.8,z); box(s,1.9,.76,.9,dark,x,.38,z); collide(x,z,2.1,1.1);
+    if(e==='FA'){ const bl=grp(s,'blood','机の血の跡',x+.6,.84,z+.2); const bp=pln(bl,.4,.25,basic('#5a1010'),0,0,0); bp.rotation.x=-Math.PI/2;
+      const [bx,bz]=at('study',1.5,.8); const body=grp(s,'body','黒須 宗一郎の遺体',bx,0,bz); box(body,.5,.25,1.6,mat('#2a2a30'),0,.13,0); sph(body,.16,mat('#c8a888'),0,.15,-.95); }
+    if(e==='FB'){ const em=grp(s,'studyB','書斎の机',x,.84,z); box(em,.4,.04,.3,mat('#efe6cf'),0,0,0); }
+    if(e==='FC'){ const c=wallSpot('study','N',-3); const cd=grp(s,'card','壁の穴あき板',c.x,1.6,c.z,c.ry); box(cd,.7,.7,.03,mat('#5a3e26'),0,0,0); pln(cd,.42,.42,new TH.MeshStandardMaterial({map:TX.card(P.holes),transparent:true,metalness:.4}),0,0,.02); }
+    if(e==='P3'){ const w=wallSpot('study','E',2); const ct=grp(s,'curtain','カーテン',w.x,0,w.z,w.ry); box(ct,1.8,2.8,.15,mat('#5a1e22',{roughness:.9}),0,1.4,.1); } }
+  // conservatory
+  { for(let i=0;i<8;i++){ const [px,pz]=at('conservatory',-4+(i%4)*2.6,-4+Math.floor(i/4)*7.5); cyl(s,.3,.22,.5,mat('#8a4a2a'),px,.25,pz); sph(s,.55,mat('#2f5a2c'),px,.9,pz); collide(px,pz,.7,.7); }
+    if(e==='FB'){ const [fx,fz]=at('conservatory',0,1); const fp=grp(s,'footprint','泥の靴跡',fx,0,fz); const mud=pln(fp,1.4,1,basic('#3a2a1a'),.4,.01,.3); mud.rotation.x=-Math.PI/2;
+      const [bx,bz]=at('conservatory',-1.5,2.2); const body=grp(s,'butler','灰田 源蔵',bx,0,bz); box(body,.5,.25,1.6,mat('#4a4a42'),0,.13,0); sph(body,.16,mat('#e0c0a0'),0,.15,-.95); }
+    if(e==='FC'){ const [bx,bz]=at('conservatory',0,1); const bag=grp(s,'bag','隠された鞄',bx,0,bz); box(bag,.6,.35,.3,mat('#3a2a1a'),0,.18,0); collide(bx,bz,.7,.4);
+      const g=wallSpot('conservatory','N',2.5); const gd=grp(s,'grid','石板',g.x,1.6,g.z,g.ry); box(gd,.9,.9,.05,mat('#2a2e30'),0,0,0); pln(gd,.8,.8,new TH.MeshStandardMaterial({map:TX.grid(P.grid),transparent:true}),0,0,.03); } }
+  // cellar
+  { for(let i=0;i<3;i++){ const [rx,rz]=at('cellar',-5.2,-3+i*3); box(s,.8,2.2,2.4,mat('#3a2418'),rx,1.1,rz); collide(rx,rz,.9,2.5); }
+    const [bx,bz]=at('cellar',2.5,2); box(s,2.6,.4,1.2,mat('#5a3a22'),bx,.2,bz); collide(bx,bz,2.7,1.3); }
+  // counting objects stand only on the night
+  if(past){
+    P.placed.portrait.forEach((sl,i)=>{ const w=wallSpot(sl[0],sl[1],sl[2]); const g=grp(s,'count:portrait','肖像画',w.x,1.7,w.z,w.ry); box(g,.75,.95,.05,mat('#7a5626',{metalness:.3}),0,0,0); pln(g,.6,.8,new TH.MeshStandardMaterial({map:TX.portrait(i+3)}),0,0,.03); });
+    P.placed.vase.forEach(sl=>{ const [x,z]=at(sl[0],sl[1],sl[2]); const g=grp(s,'count:vase','花瓶',x,0,z); cyl(g,.25,.25,.7,wood,0,.35,0); add(g,new TH.SphereGeometry(.18,12,10),mat('#3a6a8a',{roughness:.3}),0,.9,0).scale.y=1.4; collide(x,z,.5,.5); });
+    P.placed.globe.forEach(sl=>{ const [x,z]=at(sl[0],sl[1],sl[2]); const g=grp(s,'count:globe','地球儀',x,0,z); cyl(g,.03,.03,.8,dark,0,.4,0); sph(g,.26,mat('#2f5f6e'),0,1.0,0); collide(x,z,.5,.5); });
+    P.placed.cage.forEach(sl=>{ const [x,z]=at(sl[0],sl[1],sl[2]); const g=grp(s,'count:cage','鳥かご',x,0,z); cyl(g,.03,.03,1.2,dark,0,.6,0); add(g,new TH.CylinderGeometry(.25,.25,.5,10,1,true),new TH.MeshStandardMaterial({color:'#c9a24e',metalness:.7,wireframe:true}),0,1.45,0); add(g,new TH.SphereGeometry(.25,10,6,0,TAU,0,Math.PI/2),brass,0,1.7,0); collide(x,z,.5,.5); });
+  } else for(let i=0;i<10;i++){ const r=FUTURE_ROOMS[i%4]; const [x,z]=at(r,rndU(-4,4),rndU(-4,4)); box(s,rndU(.1,.3),.03,rndU(.1,.3),mat('#6a5a4a'),x,.09,z).rotation.y=rndU(0,3); }
+}
+function mkPerson(su,isMaster){
+  const g=new TH.Group(), tr=su.tr, skin=mat('#e0c0a0'), body=mat(su.color,{roughness:.6}), dk=mat('#1a1a1e');
+  const legs=[-.1,.1].map(x=>{ const l=new TH.Group(); l.position.set(x,.82,0); g.add(l); cyl(l,.07,.07,.8,dk,0,-.4,0,8); return l; });
+  cyl(g,.22,.27,.75,body,0,1.18,0,12);
+  const armL=new TH.Group(), armR=new TH.Group(); armL.position.set(-.3,1.48,0); armR.position.set(.3,1.48,0); g.add(armL,armR);
+  [armL,armR].forEach(a=>{ cyl(a,.055,.05,.62,body,0,-.3,0,8); sph(a,.06,skin,0,-.64,0); });
+  if(tr.ring&&!isMaster) add(armR,new TH.TorusGeometry(.04,.015,6,12),mat('#ffd060',{metalness:.9,roughness:.2,emissive:'#806020',emissiveIntensity:.5}),0,-.6,.03);
+  sph(g,.16,skin,0,1.72,0);
+  add(g,new TH.SphereGeometry(.17,14,8,0,TAU,0,Math.PI/2),mat(su.hair),0,1.75,-.01);
+  if(isMaster&&S.era!=='P1'&&S.era!=='P3') cyl(g,.17,.17,.06,mat('#f0f0f0'),0,1.84,0,12);
+  const glass=cyl(g,.035,.03,.12,new TH.MeshStandardMaterial({color:'#e0f0f0',transparent:true,opacity:.6}),tr.hand==='L'?-.3:.3,.92,.12,8); glass.visible=false;
+  const cig=new TH.Group(); cig.position.set(tr.hand==='L'?-.18:.18,1.62,.18); g.add(cig); cyl(cig,.008,.008,.09,basic('#f0f0f0'),0,0,0,6).rotation.z=Math.PI/2; sph(cig,.012,basic('#ff6a20'),.05,0,0); cig.visible=false;
+  const sc=tr.tall?1.08:.93; g.scale.set(1,sc,1);
+  const lbl=new TH.Sprite(new TH.SpriteMaterial({map:TX.name(su.name,isMaster?'#efb65a':'#ece2ca'),depthTest:false,transparent:true,fog:false})); lbl.scale.set(1.15,.29,1); lbl.position.y=2.05/sc; g.add(lbl);
+  g.userData={person:su.id,legs,armL,armR,glass,cig,lbl,label:su.name+'に話しかける'};
+  V.targets.push(g);
+  return g;
+}
+function placePeople(){
+  const s=V.scene, e=S.era, list=[], byRoom={}, put=(su,r,pose,master)=>(byRoom[r]=byRoom[r]||[]).push({su,pose,master});
+  if(e==='P1'){
+    K.sus.forEach(su=>{ const se=SEATS[su.id], c=rc('dining'); list.push({su,x:c.x+se[0],z:c.z+se[1]+(se[1]<0?-.35:.35),a:se[2],pose:'dinner'}); });
+    const c=rc('dining'); list.push({su:MASTER,x:c.x-3.9,z:c.z,a:Math.PI/2,pose:'dinner',master:true});
+  } else if(e==='P2'){
+    K.sus.forEach(su=>put(su,K.nightPlace[su.id],'stand')); put(MASTER,'hall','stand',true);
+  } else if(e==='P3'){
+    K.sus.forEach(su=>{ if(su.id!==K.ci) put(su,K.alibiRoom[su.id],'stand'); });
+    const c=rc('study'); list.push({su:MASTER,x:c.x,z:c.z-3.3,a:0,pose:'stand',master:true});
+  } else {
+    K.sus.forEach(su=>{ if(e==='FB'&&su.id===BUTLER) return; put(su,e==='FC'&&su.id===BUTLER?'kitchen':K.futurePlace[su.id],K.futurePlace[su.id]==='library'&&su.tr.smoker&&!(e==='FC'&&su.id===BUTLER)?'smoke':'stand'); });
+    if(e!=='FA') put(MASTER,'hall','stand',true);
+    if(e==='FC'&&S.role==='future'&&F('cellarOpen')){}
+  }
+  for(const r in byRoom) byRoom[r].forEach((p,i)=>{ const c=rc(r), sp=SPOTS[(i*5+2)%SPOTS.length]; list.push({...p,x:c.x+sp[0],z:c.z+sp[1],a:Math.atan2(-sp[0],-sp[1])}); });
+  list.forEach(p=>{ const m=mkPerson(p.su,p.master); m.position.set(p.x,0,p.z); m.rotation.y=p.a; s.add(m);
+    const u=m.userData; if(p.pose==='dinner'){ u.glass.visible=!p.master; (p.su.tr.hand==='L'?u.armL:u.armR).rotation.x=-1.1; }
+    if(p.pose==='smoke'){ u.cig.visible=true; (p.su.tr.hand==='L'?u.armL:u.armR).rotation.x=-2.2; }
+    V.npc[p.su.id]={m,x:p.x,z:p.z,room:roomAt(p.x,p.z),pose:p.pose,ph:Math.random()*6}; });
+  // the culprit waiting at the boat (two players, future side, final confrontation)
+  if(e==='FC'&&S.role==='future'){ const C=K.sus[K.ci], c=rc('cellar'); const m=mkPerson(C,false); m.position.set(c.x+2.5,0,c.z+.6); m.rotation.y=Math.PI; m.userData.lbl.visible=false; m.userData.person=undefined; m.userData.obj='fugitive'; m.userData.label='舟のそばの人影'; s.add(m); }
+}
+
+/* =========================================================
+   eras, attacks, leaps
+   ========================================================= */
+function enterEra(era,note){
+  S.era=era; S.visits[era]=(S.visits[era]||0)+1; S.visitOpen=new Set(); S.smokeSeen=false; S.armed=null; S.waiting=null; S.hidden=false;
+  if(era==='P1'&&F('pour')) S.armed={kind:'P1',room:'dining'};
+  if(era==='P2'&&F('keyHidden')) S.armed={kind:'P2',room:'hall'};
+  buildMansion();
+  const st=ERAS[era].start, c=rc(st[0]); V.pos={x:c.x+st[1],z:c.z+st[2]}; V.yaw=st[3]; V.pitch=-.05;
+  $('#eraWatch').innerHTML=clockSVG(...ERA_TIME[era]);
+  $('#era').textContent=ERAS[era].name; $('#era').className='era '+(ERAS[era].past?'past':'future');
+  $('#chapter').textContent=`第${ERAS[era].ch}章`;
+  $('#btnWatch').disabled=!(S.mode==='solo'&&S.flags.watch&&!ERAS[era].past);
+  updateSuspCount(); updateObjective(); pushPresence();
+  const first=S.visits[era]===1;
+  const INTRO={
+    FA:`<p class="letter">目を覚ますと、客間のベッドの上だった。\n嵐は止み、床には泥水が薄く広がっている。\n扉には外から鍵がかかっている。どこかに鍵はないだろうか。</p><p class="fine">廊下の向こうから、誰かのすすり泣きが聞こえる。${S.mode==='coop'?'<br>あなたは<b>未来担当</b>。過去担当の相棒は、事件前の夜にいる。計画書の空欄を解き明かし、何を変えればいいかを伝えよう。':''}</p>`,
+    P1:`<p class="letter">気がつくと、夕食の席にいた。\nろうそくが揺れ、皆がグラスを傾けている。\n時計は20時10分。当主・黒須宗一郎は、まだ生きている。</p><p class="cap">${S.mode==='coop'?'あなたは<b>過去担当</b>。未来の相棒が、この夜に何が起きるかを伝えてくれる。計画を邪魔して、歴史を変えよう。':S.ev.includes('M1')?'医師のメモによれば、当主は<b>ブランデーの眠り薬</b>で眠らされてから殺された。そのブランデーは、たぶん食堂の酒棚にある。':'未来で知ったことを思い出そう。当主はどうやって殺されたのか。'}</p><p class="fine">夕食の間なら、全員がグラスを持つ手を見られる。</p>`,
+    FB:`<p class="letter">また、客間のベッドの上で目を覚ました。\n廊下から聞こえてきたのは……当主の声だ。生きている！\nだが、執事の灰田の姿がどこにも見えない。</p><p class="fine">過去が変わったことで、未来が変わった。</p>`,
+    P2:`<p class="letter">夜23時。広間には、頭に包帯を巻いた当主と、青ざめた客たち。\n20時45分の襲撃は失敗に終わった。\nだが犯人は、今夜のうちに「見られた相手」を始末するつもりでいる。</p><p class="fine">${S.mode==='coop'?'未来の相棒から、誰が、どこで狙われるのかを聞こう。':'未来で解明した計画書を思い出そう。'}</p>`,
+    FC:`<p class="letter">客間で目を覚ます。三度目の朝。\n厨房から、灰田の落ち着いた声が聞こえる。……生きている。\n温室の扉には鍵がかかったままだ。鍵は、どこにある？</p><p class="fine">犯人はまだ屋敷にいる。最後の計画書が、どこかにあるはずだ。</p>`,
+    P3:`<p class="letter">20時40分。最初の夜に戻ってきた。\n当主はブランデーを持たず、書斎へ入っていった。\n5分後、犯人はあの扉を開ける。</p><p class="cap">書斎で待ち伏せし、犯行の瞬間に<b>証拠を突きつけて</b>名指しする。それまでに、容疑者ボードでほかの全員を外しておくこと。</p>`
+  };
+  const again=`<p class="letter">${ERAS[era].past?'懐中時計の針が逆に回り、夜に戻ってきた。\n前に変えたことは、そのまま残っている。':'また、客間で目を覚ました。\n過去で変えたことが、この朝に現れているはずだ。'}</p>`;
+  openModal(`第${ERAS[era].ch}章　${ERAS[era].name}`,(note?`<p class="shiftline">${note}</p>`:'')+(first?INTRO[era]:again)+`<button class="btn primary" data-act="begin">探索を始める</button>`,'start');
+}
+function updateObjective(){
+  const e=S.era; let t='';
+  if(e==='FA') t=!S.keyKnown?'客間から出る（鍵を探す）':!S.planV?'書斎で何があったか調べる':!S.plan.P1?'計画書の空欄「眠らせる方法」を解明する':S.mode==='coop'?'過去の相棒に伝える。次の部屋に入ると……':'解明した。次の部屋に入ると……';
+  if(e==='P1') t=!F('cabOpen')?'酒棚を開ける（未来で見た番号）':!F('pour')?'眠り薬入りのブランデーを捨てる（歴史を変える）':'歴史を変えた。食堂を出ると……';
+  if(e==='FB') t=S.planV<2?'変わった朝の屋敷を調べる（書斎、当主）':!(S.plan.P3&&S.plan.P4)?'書き足された計画書の空欄を解明する':'解明した。次の部屋に入ると……';
+  if(e==='P2') t=!S.hasBoxKey&&!F('keyHidden')?'灰田の鍵箱から温室の鍵を手に入れる':!F('keyHidden')?'温室の鍵を、朝まで見つからない場所に隠す':'歴史を変えた。部屋を出ると……';
+  if(e==='FC') t=!S.visitOpen.has('C')?'温室の鍵を見つける（過去で隠した場所）':S.planV<3?'温室を調べる':!(S.plan.P5&&S.plan.P6)?'最後の計画書の空欄を解明する（当主と灰田に聞く）':S.mode==='coop'?(F('cellarCaught')?'過去の相棒を待つ':'地下セラーへ（逃げようとする犯人）'):'解明した。次の部屋に入ると……';
+  if(e==='P3') t=!S.hasStudyKey?'灰田に書斎の合鍵を借りる':!S.hidden?'書斎のカーテンの陰に隠れる':'犯人を待つ';
+  if(S.ended) t='事件解決';
+  $('#objective').textContent='目的：'+t;
+}
+function nextAfterAttack(kind){
+  const coop=S.mode==='coop';
+  if(kind==='FA') return coop?{wait:'pour',to:'FB'}:{to:'P1'};
+  if(kind==='P1') return {to:coop?'P2':'FB'};
+  if(kind==='FB') return coop?{wait:'keyHidden',to:'FC'}:{to:'P2'};
+  if(kind==='P2') return {to:coop?'P3':'FC'};
+  if(kind==='FC') return coop?{to:'FC'}:{to:'P3'};
+  if(kind==='P3') return {to:'P3'};
+  return {to:pastEra()};
+}
+function attack(kind){
+  if(!S.playing) return;
+  S.playing=false; S.attacks++; if(document.pointerLockElement) document.exitPointerLock();
+  const gid='G_'+(GLIMPSE_OF[kind]||'tall');
+  const lines={
+    FA:'背後で床板がきしんだ。\n振り向く間もなく、重いものが振り下ろされる。',
+    P1:'食堂を出た瞬間、廊下の明かりがふっと消えた。\n暗がりから、誰かがこちらを見ている。',
+    FB:'扉を開けた瞬間、濡れた足音が真後ろで止まった。',
+    P2:'部屋を出ると、闇の中から手が伸びてきた。\n口をふさがれ、意識が遠のく。',
+    FC:'背後の扉が静かに閉まる音。\n振り向くと、燭台を構えた影が立っていた。',
+    P3:'「……断定はできないな」\n影は笑い、燭台を振り上げた。'
+  }[kind]||'背後に、誰かが立っていた。';
+  $('#fade').classList.add('on'); tone([110,82],.5,'sawtooth',.08);
+  const nx=nextAfterAttack(kind);
+  setTimeout(()=>{
+    const fresh=addEv(gid,true);
+    openModal('襲撃',`<p class="death">${esc(lines)}</p><p class="clue"><b>${esc(K.ev[gid].text)}</b><br>${esc(K.ev[gid].claim)}${fresh?'':'（もう知っている）'}</p><p class="fine">手の中で、懐中時計の針が回り出した。</p><button class="btn primary" data-act="leap" data-to="${nx.to}" data-wait="${nx.wait||''}">${ERAS[nx.to].past?'過去へ飛ぶ':'未来へ飛ぶ'}</button>`,'attack');
+  },1300);
+}
+function leap(to,wait){
+  closeModal(true); $('#fade').classList.remove('on'); setFlag('watch',true); S.leaps++;
+  if(!(wait&&!F(wait))){ showShift(ERAS[to].past?'時が巻き戻る':'時が進む',ERAS[to].past?'back':'fwd'); setTimeout(()=>enterEra(to),1500); return; }
+  if(wait&&!F(wait)){ S.waiting={flag:wait,to}; openModal('時の狭間',`<p class="death">……時の狭間で、過去が変わるのを待っている。</p><p class="cap">過去担当の相棒が歴史を変えると、この朝が動き出す。何を変えればいいか、声で伝えよう。</p><p class="fine">手帳は見られる（Tab）。</p>`,'wait'); pushPresence(); return; }
+  enterEra(to);
+}
+function onFlag(k,local){
+  // reactions to history changing, whether we changed it or our partner did
+  if(S.mode!=='coop') return;
+  const iAmFuture=S.role==='future';
+  const msgs={pour:'過去が変わった……当主のブランデーから、眠り薬が消えた。',keyHidden:'過去が変わった……温室の鍵が、どこかに隠された。',caught:'過去が変わった……犯行の瞬間に、犯人が取り押さえられた。',cellarCaught:'未来が変わった……逃げようとした犯人が、セラーで捕まった。'};
+  if(local) return;
+  if(iAmFuture&&['pour','keyHidden','caught'].includes(k)){
+    showShift('未来が変わった');
+    toast(msgs[k]);
+    if(!(S.waiting&&S.waiting.flag===k)&&k!=='caught') setTimeout(()=>toast('……次に時を飛べば、変わった朝に出るはずだ。'),1500);
+    if(S.waiting&&S.waiting.flag===k){ const to=S.waiting.to; setTimeout(()=>{ closeModal(true); enterEra(to,'――未来が変わった。'); },2600); }
+    if(k==='caught') checkEnding();
+  }
+  if(!iAmFuture&&k==='cellarCaught'){ showShift('未来が変わった'); toast(msgs[k]); checkEnding(); }
+}
+function showShift(t,dir){ const el=$('#shift'); $('#shiftText').textContent=t; $('#shiftClock').innerHTML=clockSVG(8,45); el.hidden=false; el.className='shift '+(dir||(t.includes('過去')||t.includes('戻')?'back':'fwd')); void el.offsetWidth; el.classList.add('go'); tickTock(); tone([660,440,330],.25,'sine',.05); setTimeout(()=>el.hidden=true,2600); }
+function tickTock(){ for(let i=0;i<6;i++) setTimeout(()=>tone([i%2?1800:1500],.03,'square',.025),i*180); }
+function useWatch(){
+  if(!S.playing||ERAS[S.era].past||S.mode!=='solo'||!F('watch')) return;
+  const to=pastEra();
+  openModal('懐中時計',`<p class="cap">当主の懐中時計。竜頭を回せば、${ERAS[to].name}に戻れる気がする。</p><p class="fine">過去で変えたことは残る。刻んだ番号を直したいときなどに。</p><button class="btn primary" data-act="watchgo" data-to="${to}">竜頭を回す</button>`,'info');
+}
+
+/* =========================================================
+   observation and testimony
+   ========================================================= */
+let obsT=0;
+function observe(dt){
+  obsT-=dt; if(obsT>0) return; obsT=.25;
+  const me=V.pos, myRoom=roomAt(me.x,me.z);
+  K.sus.forEach(su=>{ const n=V.npc[su.id]; if(!n||n.room!==myRoom) return; const d=Math.hypot(n.x-me.x,n.z-me.z);
+    if(d<9) learn(su.id,'tall',su.tr.tall,'姿を見た');
+    if(d<2.6) learn(su.id,'ring',su.tr.ring,'近くで見た');
+    if(n.pose==='dinner'&&d<9) learn(su.id,'hand',su.tr.hand,'夕食でグラスを持つ手');
+  });
+  if(!ERAS[S.era].past&&myRoom==='library'&&!S.smokeSeen){ S.smokeSeen=true; K.sus.forEach(su=>learn(su.id,'smoker',su.tr.smoker,su.tr.smoker?'図書室で吸っていた':'図書室に来ていない',true)); toast('朝の図書室には、煙草を吸う人が全員集まっている。ボードに記録した'); }
+  if(S.armed&&myRoom!==S.armed.room){ const k=S.armed.kind; S.armed=null; attack(k); }
+}
+function autoEvidence(){
+  K.sus.forEach(a=>{ if(!S.heard[a.id]) return; const t=K.testi[a.id]; if(t.with===null) return; const b=t.with; if(!S.heard[b]) return; const tb=K.testi[b];
+    if(tb.with===a.id&&tb.room===t.room){ const id=`P${Math.min(a.id,b)}_${Math.max(a.id,b)}`;
+      if(!K.ev[id]) K.ev[id]={id,type:'証言',title:`${K.sus[Math.min(a.id,b)].name}と${K.sus[Math.max(a.id,b)].name}の証言`,text:`2人とも「20時45分は${ROOMS[t.room].name}で一緒だった」と言っている。話が食い違わない。`,pred:{kind:'clear',who:[a.id,b]},claim:'2人とも犯行時刻に現場にいなかった'};
+      addEv(id); }
+    else { const id=`X${a.id}_${b}`; if(!K.ev[id]) K.ev[id]={id,type:'証言',title:`${a.name}と${K.sus[b].name}の食い違い`,text:`${a.name}は「${K.sus[b].name}と${ROOMS[t.room].name}にいた」と言うが、${K.sus[b].name}の話は違う。`,pred:null,claim:'どちらかが嘘をついている'}; addEv(id); } });
+}
+const TIPS={
+  P1:['旦那様は毎晩8時半に書斎へ。いつものブランデーは、食堂の酒棚から灰田さんが運びます。','酒棚の番号は灰田さんしか知りません。どこかに控えでもあるのでしょうか。','温室の扉の錠は、旦那様のお遊びですよ。屋敷の飾り物の数がそのまま番号だとか。','今夜は嵐がひどい。明日の朝には、屋敷が水浸しかもしれません。'],
+  P2:['灰田さんは毎晩23時半に、温室の見回りをするんです。','温室の鍵は、厨房にある灰田さんの鍵箱の中ですよ。番号は、旦那様の燭台と本の謎かけだとか。','広間の燭台の火の色、何か意味があるんですかね。','旦那様は無事でした。でも、犯人はまだこの屋敷に……'],
+  P3:['旦那様は8時半に書斎へ。今夜はブランデーを断られました。','書斎の合鍵は、灰田さんが持っているはずです。','さっきまで一緒だった方が、ふらりといなくなりましてね。','嵐の音で、足音が聞こえませんね。'],
+  F:['玄関の記録簿には、執事が出入りを書きとめています。','厨房の伝票には、誰がいつ何を受け取ったかが残ります。','玄関の靴棚には、皆さんの靴が名札つきで並んでいます。','煙草を吸う方は、朝はみな図書室に集まっていますよ。']
+};
+const FLAVOR=['旦那様には、誰もが何かしら借りがありました。','この屋敷は、水の上に建っているようなものです。','書斎には、旦那様しか入れないはずでした。','私は何も知りません。本当です。','あの懐中時計、旦那様が肌身離さず持っていたものですよ。'];
+function talk(sid){
+  if(sid===MASTER.id) return talkMaster();
+  const su=K.sus[sid];
+  learn(sid,'perfume',su.tr.perfume,su.tr.perfume?'甘い香水の匂い':'香水の匂いはしない');
+  learn(sid,'ring',su.tr.ring,'近くで見た'); learn(sid,'tall',su.tr.tall,'');
+  if(S.era==='FC'&&sid===BUTLER){ S.flags.metButlerC=true; addEv('H1'); updateObjective(); }
+  renderTalk(sid,'');
+}
+function renderTalk(sid,say){
+  const su=K.sus[sid], kn=S.known[sid], past=ERAS[S.era].past, e=S.era;
+  const seen=TRAITS.filter(t=>kn[t.k]!==undefined).map(t=>`<span>${t.label}：${TV(t.k,kn[t.k])}</span>`).join('');
+  let qs='';
+  if(past){ qs+=`<button class="q" data-q="plan" data-sid="${sid}">${e==='P2'?'これから、何をなさるんですか？':'今夜、当主のご予定は？'}</button>`;
+    if(e==='P3'&&sid===BUTLER) qs+=`<button class="q" data-q="studykey" data-sid="${sid}">書斎の合鍵を貸してほしい</button>`; }
+  else qs+=`<button class="q${S.heard[sid]?' done':''}" data-q="alibi" data-sid="${sid}">昨夜20時45分、どこにいましたか？</button>`;
+  if(e==='FC'&&sid===BUTLER) qs+=`<button class="q" data-q="witness" data-sid="${sid}">あの晩、何を見たんですか？</button><button class="q" data-q="boat" data-sid="${sid}">屋敷から逃げる道はある？</button>`;
+  qs+=`<button class="q" data-q="tip" data-sid="${sid}">何か気づいたことは？</button><button class="q" data-q="master" data-sid="${sid}">当主について</button>`;
+  openModal(su.name,`<div class="talk"><div class="face" style="background:${su.color}"></div><div><h4>${esc(su.name)}</h4><div class="role">${esc(su.role)}</div><div class="seen">${seen}</div></div></div><p class="say">${say||'「……何か？」'}</p><div class="qs">${qs}</div>`,'talk');
+}
+function answer(sid,q){
+  const su=K.sus[sid], e=S.era; let say='';
+  if(q==='alibi'){ const t=K.testi[sid]; say=`「20時45分なら、${ROOMS[t.room].name}に${t.with!==null?`${K.sus[t.with].name}さんと一緒に`:'ひとりで'}いました」`;
+    if(!S.heard[sid]){ S.heard[sid]=true; toast(`証言：${su.name}は20:45に${ROOMS[t.room].name}（${t.with!==null?K.sus[t.with].name+'と':'ひとり'}）`); autoEvidence(); } }
+  if(q==='plan') say=sid===BUTLER?(e==='P2'?'「23時半に温室の見回りを。それがわたくしの日課でございます」':'「旦那様は8時半に書斎へ入られます。いつものブランデーを、わたくしが酒棚からお持ちします」'):(e==='P2'?'「部屋に戻って休みます。とても眠れそうにありませんが」':'「さあ……いつものように、書斎にこもられるのでは」');
+  if(q==='studykey'){ if(!S.hasStudyKey){ S.hasStudyKey=true; rebuildKeepPos(); updateObjective(); } say='「……あなた様の目は、何かを知っておられる。どうぞ、書斎の合鍵です。旦那様をお願いいたします」'; }
+  if(q==='witness'){ addEv('H1'); say=K.ev.H1.text; }
+  if(q==='boat'){ S.flags.metButlerC=true; updateObjective(); say='「地下セラーに、洪水のときのための小舟がございます。水の上へ出られるのは、あそこだけでございます」'; }
+  if(q==='tip') say=`「${(ERAS[e].past?TIPS[e]:TIPS.F)[(sid+S.leaps)%4]}」`;
+  if(q==='master') say=`「${FLAVOR[sid%FLAVOR.length]}」`;
+  renderTalk(sid,esc(say));
+}
+function talkMaster(){
+  const e=S.era, face=`<div class="talk"><div class="face" style="background:${MASTER.color}"></div><div><h4>黒須 宗一郎</h4><div class="role">当主${ERAS[e].past&&e!=='P2'?'':'（頭に包帯）'}</div></div></div>`;
+  if(e==='P1') return openModal('黒須 宗一郎',face+`<p class="say">「客人か。今夜は嵐だ、ゆっくりしていきなさい。わしは8時半に書斎へ下がる」</p>`,'talk');
+  if(e==='P3') return openModal('黒須 宗一郎',face+`<p class="say">「……なぜ君がここに？　まあいい。わしは仕事がある。あと数分で、片付けたい書類があるのだ」</p>`,'talk');
+  if(e==='P2') return openModal('黒須 宗一郎',face+`<p class="say">「暗がりで殴られかけた。とっさにかわしたがな。……犯人は、まだこの屋敷におるのだろう」</p>`,'talk');
+  if(e==='FB'){ addEv('W1'); S.flags.metMasterB=true; updateObjective();
+    return openModal('黒須 宗一郎',face+`<p class="say">「昨夜は妙に目が冴えておってな。8時45分、書斎の暗がりで、誰かが燭台を振り上げた。とっさにかわしたが……」</p><p class="clue"><b>${esc(K.ev.W1.text)}</b><br>${esc(K.ev.W1.claim)}</p><p class="say">「灰田の姿が見えん。あれは毎晩、温室の見回りをしておったが」</p>`,'talk'); }
+  if(e==='FC'){ S.flags.metMasterC=true; updateObjective();
+    return openModal('黒須 宗一郎',face+`<p class="say">「灰田が無事でよかった。……しかし、犯人はまた来る。わしが最初に襲われたのは、あの夜の<b>書斎</b>だ。すべては、あの部屋で始まった」</p>`,'talk'); }
+}
+
+/* =========================================================
+   interaction
+   ========================================================= */
+function aimTarget(){
+  if(!V.ray) return null;
+  V.ray.setFromCamera(new TH.Vector2(0,0),V.camera);
+  const hits=V.ray.intersectObjects(V.scene.children,true);
+  for(const h of hits){ if(h.distance>3.2) break; if(h.object.userData.noray||h.object.type==='Sprite') continue;
+    let o=h.object; while(o&&!(o.userData&&(o.userData.obj||o.userData.person!==undefined))) o=o.parent;
+    if(o) return o; if(h.object.userData.floor) continue; return null; }
+  return null;
+}
+function interact(){ if(!S.playing||S.paused) return; const o=aimTarget(); if(!o) return; if(o.userData.person!==undefined) return talk(o.userData.person); inspect(o.userData.obj); }
+function iconsHTML(){ return `<div class="icons">${K.puzzle.plate.map(k=>iconImg(k,64)).join('')}</div>`; }
+function findKey(spot){
+  const nm={bed:'ベッド',drawer:'引き出しつきの棚',vase:'花瓶',cage:'鳥かご'}[spot];
+  if(ERAS[S.era].past) return openModal(nm,`<p class="cap">客間の調度品。今は何もない。</p>`);
+  if(K.keySpot===spot&&!S.keyKnown){ S.keyKnown=true; openDoorMesh('G'); updateObjective(); tone([700,1000],.08,'triangle',.05); return openModal('鍵を見つけた',`<p class="cap">${{bed:'枕の下に',drawer:'引き出しの奥に',vase:'花瓶の底に',cage:'鳥かごの餌入れに'}[spot]}、小さな鍵が押し込まれていた。客間の扉が開いた。</p><p class="fine">次からは、客間の鍵の場所はもう分かっている。</p>`); }
+  return openModal(nm,`<p class="cap">${{bed:'シーツが乱れている。何もない。',drawer:'引き出しの中は空っぽだ。',vase:'花が萎れている。底には何もない。',cage:'空の鳥かご。鳥はどこへ行ったのだろう。'}[spot]}</p>`);
+}
+function inspect(obj){
+  const P=K.puzzle, e=S.era, past=ERAS[e].past;
+  if(obj.startsWith('door:')) return openDoor(obj.slice(5));
+  if(obj.startsWith('count:')) return openModal(COUNT_KINDS.find(x=>x.k===obj.slice(6)).name,`<p class="cap">屋敷のあちこちに飾られている。朝には、この多くが壊れてしまう。</p>`);
+  if(['bed','drawer','vase','cage'].includes(obj)) return findKey(obj);
+  switch(obj){
+    case 'clock':
+      if(e==='P2') return openModal('柱時計',S.hasBoxKey&&!F('keyHidden')?`<p class="cap">柱時計の振り子の裏に、小さな隙間がある。ここなら、朝まで誰にも見つからない。</p><button class="btn primary" data-act="hidekey">温室の鍵を、振り子の裏に隠す</button>`:F('keyHidden')?`<p class="cap">振り子の裏に、温室の鍵が隠してある。</p>`:`<p class="cap">時計は23時を指している。振り子の裏に、小さな隙間がある。</p>`);
+      if(e==='FC'){ if(!S.visitOpen.has('C')&&!S.gotGreenKey){ S.gotGreenKey=true; updateObjective(); return openModal('柱時計',`<p class="cap">止まった振り子の裏に、鍵が押し込まれていた。……過去で隠した、温室の鍵だ。</p>`); } return openModal('柱時計',`<p class="cap">振り子の裏は空っぽだ。</p>`); }
+      return openModal('柱時計',past?`<p class="cap">時計は${e==='P1'?'20時10分':'20時40分'}。${e==='P1'?'当主は8時半に書斎へ入り、20時45分に襲われることになる。':'あと5分。'}</p>`:`<p class="cap">針は <b>20時45分</b> で止まっている。当主が襲われた時刻だ。</p>`);
+    case 'candles': {
+      let s=''; P.candles.forEach((c,i)=>{ const x=55+i*98, h=96+((i*5)%3)*18, top=200-h; s+=`<rect x="${x-20}" y="${top}" width="40" height="${h}" rx="4" fill="${c.hex}"/>`+(past&&P.lit.has(i)?`<ellipse cx="${x}" cy="${top-22}" rx="10" ry="22" fill="#ffd27a"/>`:`<line x1="${x}" y1="${top}" x2="${x}" y2="${top-12}" stroke="#111" stroke-width="3"/>`)+`<text x="${x}" y="232" text-anchor="middle" font-size="17" fill="#ece2ca">${c.name}</text>`; });
+      return openModal('燭台のろうそく',`<svg class="closeup" viewBox="0 0 600 250" style="background:#1b2622"><rect y="200" width="600" height="14" fill="#5b3f2b"/>${s}</svg><p class="cap">${past?'色の違うろうそくが6本。火がついているものと、消えているものがある。':'朝には、すべてのろうそくが燃え尽きている。'}燭台の脚に彫られている：</p><p class="engrave">灯の並びに、瓶の印を数えよ</p>`); }
+    case 'book': { const page=(n,ord,T)=>`<div class="page"><h4>${n}</h4><div class="tbl">${ord.map(i=>`<div class="cell">${glyphSVG(P.glyphs[i],36,'#2b2117')}<span>＝</span><b>${T[i]}</b></div>`).join('')}</div></div>`;
+      return openModal('古い本',`<div class="book">${page('太陽の章',P.sunOrder,P.sunT)}${page('月の章',P.moonOrder,P.moonT)}</div><p class="hand">印は数に化ける。ただし、客間の空の機嫌しだいで。</p>`); }
+    case 'jars': { let s=''; P.jars.forEach((c,i)=>{ const x=55+i*98; s+=`<rect x="${x-30}" y="70" width="60" height="110" rx="8" fill="#bcd3d3" opacity=".35"/><rect x="${x-26}" y="110" width="52" height="66" rx="6" fill="${c.hex}"/><rect x="${x-25}" y="118" width="50" height="46" fill="#efe6cf"/>${glyphSVG(P.glyphs[P.jarGlyph[c.id]],36,'#2b2117',`x="${x-18}" y="123"`)}<text x="${x}" y="212" text-anchor="middle" font-size="17" fill="#ece2ca">${c.name}</text>`; });
+      return openModal('香辛料の瓶',`<svg class="closeup" viewBox="0 0 600 230" style="background:#3a3430">${s}</svg><p class="cap">色の違う瓶が6つ。見たことのない印のラベルが貼ってある。</p>`); }
+    case 'window': return openModal('窓',`<p class="cap">窓ははめ殺しで、外の景色は絵になっている。${P.sky==='sun'?'まぶしい昼の空に、太陽。':'夜の空に、細い月。'}</p>`);
+    case 'keybox':
+      if(e==='P2'){ if(S.hasBoxKey||F('keyHidden')) return openModal('執事の鍵箱',`<p class="cap">鍵箱は開いている。温室の鍵は、もうここにはない。</p>`);
+        return openModal('執事の鍵箱',`<p class="cap">執事の鍵箱。温室の鍵が中に見える。4桁の番号錠。</p><p class="engrave">灯の並びに、瓶の印を数えよ</p>${keypadHTML('BOX','開ける')}`,'lock'); }
+      return openModal('執事の鍵箱',`<p class="cap">${past?'鍵のかかった鍵箱。':'鍵箱の中は空っぽだ。'}</p>`);
+    case 'board': return openBook('board');
+    case 'shelf-lib': return openModal('本棚',`<p class="cap">『水門工学』『潮汐論』。当主の蔵書は水の本ばかりだ。</p>`);
+    case 'ashtray': return openModal('灰皿',`<p class="cap">吸い殻がたまっている。${past?'':'朝の図書室には、煙草を吸う人がみな集まっているようだ。'}</p>`);
+    case 'plate':
+      if(e==='P1'||e==='P2') return openModal('温室の扉の錠',`<p class="cap">温室の扉の錠に、4つの絵が並んでいる。屋敷にそれぞれいくつあるかが番号らしい。</p>${iconsHTML()}<p class="cap">朝になると、この錠は錆びて文字盤が読めなくなる。今のうちに、扉の枠に番号を刻んでおけば……</p>${keypadHTML('carve','刻む')}`,'lock');
+      if(past) return openModal('温室の扉',`<p class="cap">今夜の温室は、灰田が鍵をかけている。</p>`);
+      return openModal('温室の錠の横の刻み',S.carved?`<p class="cap">扉の枠に、誰かが刻んだ数字がある。</p><p class="engrave">${esc(S.carved)}</p>`:`<p class="cap">錠の横の枠には、何も刻まれていない。</p>`);
+    case 'slip': { const has=K.ev.N2; if(has) addEv('N2'); return openModal('注文伝票',has?`<p class="hand">${esc(K.ev.N2.text)}</p><p class="clue">${esc(K.ev.N2.claim)}</p>`:`<p class="cap">昨夜の献立が書いてある。</p>`); }
+    case 'shoes': { K.sus.forEach(su=>learn(su.id,'shoe',su.tr.shoe,'',true)); toast('靴棚：全員の靴の大きさをボードに記録した'); return openModal('靴棚',`<p class="cap">客と家の者の靴が、名札つきで並んでいる。</p><p class="hand">${K.sus.map(su=>`${esc(su.name)}：${su.tr.shoe==='big'?'大きい':'小さい'}`).join('<br>')}</p>`); }
+    case 'ledger': { const has=K.ev.N1; if(has) addEv('N1'); return openModal('記録簿',has?`<p class="hand">${esc(K.ev.N1.text)}</p><p class="clue">${esc(K.ev.N1.claim)}</p>`:`<p class="cap">来客の到着時刻が並んでいる。</p>`); }
+    case 'frontdoor': return openModal('玄関の扉',`<p class="cap">${past?'嵐で外から板が打ちつけられ、開かない。':'板は外れたが、外は泥の海だ。屋敷から出ても行くあてがない。'}</p>`);
+    case 'docnote': addEv('M1'); return openModal('医師のメモ',`<p class="hand">${esc(K.ev.M1.text)}</p><p class="clue">${esc(K.ev.M1.claim)}</p>`);
+    case 'cabinet':
+      if(e==='P1'&&!F('cabOpen')) return openModal('酒棚',`<p class="cap">鍵のかかった酒棚。4桁の番号錠。番号は執事しか知らないらしい。</p>${keypadHTML('CAB','開ける')}`,'lock');
+      if(e==='P1'&&!F('pour')) return openModal('酒棚',`<p class="cap">当主のブランデーの瓶がある。光にかざすと、底に白い粉が沈んでいる。</p><button class="btn primary" data-act="pour">中身を捨てて、ただの水を入れておく</button>`);
+      if(e==='P1') return openModal('酒棚',`<p class="cap">ブランデーの瓶には、ただの水が入っている。</p>`);
+      if(e==='FA'){ addEv('K1'); return openModal('こじ開けられた酒棚',`<p class="cap">酒棚の扉はこじ開けられ、ブランデーの瓶は空になっている。</p><p class="hand">${esc(K.ev.K1.text)}</p><p class="fine">過去のこの酒棚は、この番号で開くはずだ。</p>`); }
+      return openModal('酒棚',`<p class="cap">酒棚は閉じている。</p>`);
+    case 'blood': addEv('L1'); return openModal('机の血の跡',`<p class="clue"><b>${esc(K.ev.L1.text)}</b><br>${esc(K.ev.L1.claim)}</p>`);
+    case 'body': if(!S.planV){ S.planV=1; setFlag('watch',true); $('#btnWatch').disabled=S.mode!=='solo'; updateObjective(); }
+      return openModal('黒須 宗一郎',`<p class="cap">当主は床に倒れ、冷たくなっている。後頭部を重い物で殴られたようだ。右手には止まった懐中時計、左手には破れた紙が握られていた。</p><p class="cap"><b>犯人の殺人計画書</b>だ。ところどころ血でにじんで読めない。手帳の「計画書」に写した。</p>${planText()}<p class="fine">空欄を埋めるには、屋敷のあちこちを調べる必要がある。</p>`);
+    case 'studyB': if(S.planV<2){ S.planV=2; pushSync(); updateObjective(); }
+      return openModal('書斎の机',`<p class="cap">机の上に、飲まれなかったブランデーのグラス。その下に、見覚えのある紙が挟まっていた。あの計画書だ。裏に書き足しがある。</p>${planText()}`);
+    case 'footprint': addEv('L2'); return openModal('泥の靴跡',`<p class="clue"><b>${esc(K.ev.L2.text)}</b><br>${esc(K.ev.L2.claim)}</p>`);
+    case 'butler': addEv('D1'); return openModal('灰田 源蔵',`<p class="cap">執事の灰田が、鉢植えの陰に倒れている。もう息がない。手には、書きかけの紙片……「あの夜、廊下で」</p><p class="clue">${esc(K.ev.D1.claim)}</p>`);
+    case 'bag': if(S.planV<3){ S.planV=3; pushSync(); updateObjective(); }
+      return openModal('隠された鞄',`<p class="cap">温室の植木鉢の陰に、誰かの鞄が隠されていた。中には着替えと、もう一枚の計画書。</p>${planText()}`);
+    case 'card': return openModal('壁の穴あき板',`${cardSVG(P.holes)}<p class="cap">鉄の板に四角い穴が4つ。左上の角だけ斜めに欠けている。</p>`);
+    case 'grid': return openModal('石板',`${cardSVG(null,P.grid)}<p class="cap">数字が刻まれた石板。左上の角だけ斜めに欠けている。</p>`);
+    case 'curtain': if(S.hidden) return; S.hidden=true; updateObjective(); return confrontPast();
+    case 'fugitive': return confront('cellar');
+  }
+}
+function cardSVG(holes,digits){
+  let s=`<svg class="closeup" viewBox="0 0 240 240" style="max-width:260px;margin:0 auto"><path d="M36 0 H240 V240 H0 V36 Z" fill="${digits?'#4a4f52':'#9aa3a3'}"/>`;
+  for(let i=0;i<16;i++){ const x=24+(i%4)*52, y=24+Math.floor(i/4)*52;
+    if(digits) s+=`<text x="${x+18}" y="${y+30}" font-size="30" text-anchor="middle" fill="#e8e2d0">${digits[i]}</text>`;
+    else s+=holes.includes(i)?`<rect x="${x}" y="${y}" width="36" height="36" fill="#050505"/>`:`<rect x="${x}" y="${y}" width="36" height="36" fill="none" stroke="rgba(0,0,0,.2)"/>`; }
+  return s+'</svg>';
+}
+function keypadHTML(id,go){ return `<div class="keypad" id="kp" data-lock="${id}"><div class="slots" id="slotsK"><span></span><span></span><span></span><span></span></div><div class="keys2">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button class="del" data-k="del">消す</button><button data-k="0">0</button><button class="go" data-k="go">${go}</button></div><p class="msg" id="kpMsg"></p></div>`; }
+function openDoor(id){
+  const st=doorState(id), info=LOCK_INFO[id];
+  if(st==='key') return openModal(info.name,`<p class="cap">外から鍵がかかっている。この部屋のどこかに、鍵が隠されていないだろうか。</p>`);
+  if(st==='key2'){ if(S.gotGreenKey){ S.visitOpen.add('C'); openDoorMesh('C'); updateObjective(); toast('温室の扉が開いた'); return; } return openModal(info.name,`<p class="cap">温室の扉には鍵がかかっている。鍵穴は新しい。誰かが鍵を持ち去ったようだ。</p>`); }
+  if(st==='closed') return openModal(info.name,id==='S'?`<p class="cap">当主の書斎。鍵がかかっている。${S.era==='P3'?'合鍵は灰田が持っているはずだ。':''}</p>`:id==='C'?`<p class="cap">今夜の温室は、灰田が鍵をかけている。</p>`:`<p class="cap">${ERAS[S.era].past?'鍵がかかっている。':'地下は水に沈んでいて、入れない。'}</p>`);
+  if(st==='keypad'){ if(id==='X') return openModal(info.name,`<p class="cap">地下セラーの扉。番号錠の横に、何かを重ねるための溝がある。</p><p class="engrave">穴の示す数を入れよ</p>${keypadHTML('X','開ける')}`,'lock');
+    return openModal(info.name,`<p class="cap">錆びた番号錠。文字盤の数字は読めない。</p>${S.carved?`<p class="cap">錠の横の枠に、刻まれた数字がある：</p><p class="engrave">${esc(S.carved)}</p>`:'<p class="fine">錠の横の枠には、何も刻まれていない。</p>'}${keypadHTML(id,'開ける')}`,'lock'); }
+}
+let entry='';
+function drawSlots(){ document.querySelectorAll('#slotsK span').forEach((s,i)=>s.textContent=entry[i]||''); }
+function keyPress(k){
+  const kp=$('#kp'); if(!kp) return; const id=kp.dataset.lock, msg=$('#kpMsg');
+  if(k==='del') entry=entry.slice(0,-1);
+  else if(k==='go'){
+    if(entry.length<4){ msg.className='msg'; msg.textContent='4桁そろえて。'; return; }
+    if(id==='carve'){ S.carved=entry; S.carvedT=Date.now(); pushSync(); tone([300,200],.08,'square',.04); closeModal(); toast(`温室の扉の枠に「${entry}」と刻んだ。朝まで残るはずだ。`); return; }
+    if(entry===K.answers[id]){ tone([523,659,784],.13,'triangle',.07);
+      if(id==='CAB'){ setFlag('cabOpen',true); closeModal(); updateObjective(); toast('酒棚が開いた'); rebuildKeepPos(); return; }
+      if(id==='C'){ S.visitOpen.add('C'); openDoorMesh('C'); closeModal(); updateObjective(); toast('温室の扉が開いた'); return; }
+      if(id==='X'){ S.visitOpen.add('X'); openDoorMesh('X'); closeModal(); updateObjective(); toast('地下セラーの扉が開いた。水音と、誰かの息づかい。'); return; }
+      if(id==='BOX'){ S.hasBoxKey=true; closeModal(); updateObjective(); toast('鍵箱が開いた。温室の鍵を手に入れた。朝まで見つからない場所に隠そう'); return; } }
+    entry=''; msg.className='msg bad'; msg.textContent=id==='C'?'開かない。刻んだ番号が違うのかもしれない。':'開かない。'; tone([170,110],.2,'sawtooth',.05); kp.classList.remove('shake'); void kp.offsetWidth; kp.classList.add('shake');
+  } else if(entry.length<4) entry+=k;
+  drawSlots();
+}
+function rebuildKeepPos(){ const p={...V.pos}, y=V.yaw, pi=V.pitch; buildMansion(); V.pos=p; V.yaw=y; V.pitch=pi; }
+
+/* =========================================================
+   the plan sheet
+   ========================================================= */
+function solvePlan(id,opt){
+  const p=PLAN.find(x=>x.id===id); if(!p||S.plan[id]) return;
+  if(opt!==p.ans){ tone([170,120],.15,'sawtooth',.04); return renderBook({t:'……違う気がする。手がかりをもう一度見直そう。',bad:true}); }
+  S.plan[id]=opt; pushSync(); tone([523,784],.12,'triangle',.06);
+  const room=roomAt(V.pos.x,V.pos.z), e=S.era;
+  let arm=null;
+  if(e==='FA'&&id==='P1') arm='FA';
+  if(e==='FB'&&S.plan.P3&&S.plan.P4) arm='FB';
+  if(e==='FC'&&S.plan.P5&&S.plan.P6&&S.mode==='solo') arm='FC';
+  if(arm){ S.armed={kind:arm,room}; renderBook({t:'解明した。……背中に、誰かの視線を感じる。次の部屋に入れば、何かが起きる。'}); }
+  else renderBook({t:S.mode==='coop'&&e==='FC'&&S.plan.P5&&S.plan.P6?'解明した。犯人は地下セラーから舟で逃げるつもりだ。':'解明した。'});
+  updateObjective();
+}
+
+/* =========================================================
+   confrontations and the ending
+   ========================================================= */
+let confrontAt=null;
+function confrontPast(){
+  openModal('20時45分',`<p class="death">カーテンの陰で息をひそめる。\n扉が、静かに開いた。\n燭台を手にした影が、当主の背後に忍び寄る――</p><p class="cap">今だ。犯人を名指しし、決め手の証拠を2つ突きつける。</p><button class="btn primary" data-act="toaccuse" data-at="study">飛び出して、指さす</button>`,'confront');
+}
+function confront(at){
+  if(S.flags.cellarCaught) return openModal('地下セラー',`<p class="cap">犯人はもう取り押さえてある。</p>`);
+  openModal('地下セラー',`<p class="death">小舟のそばで、誰かが慌ただしく荷を積んでいる。\n水音が止んだ。影がこちらを振り向く。</p><p class="cap">逃がすわけにはいかない。犯人を名指しし、決め手の証拠を2つ突きつける。</p><button class="btn primary" data-act="toaccuse" data-at="cellar">指さす</button>`,'confront');
+}
+let bookTab='plan', crossSid=null, accuse={sid:null,ev:[]};
+function evCard(id,pick,sel){ const e=K.ev[id]; const cls=e.type==='物証'?'p':e.type==='証言'?'t':'r';
+  return `<div class="ev${pick?' pick':''}${sel?' sel':''}" ${pick?`data-pick="${id}"`:''}><span class="tag ${cls}">${e.type}</span><div><p><b>${esc(e.title)}</b></p><p>${esc(e.text)}</p><p class="pred">${esc(e.claim)}</p></div></div>`; }
+function openBook(tab){ bookTab=tab||bookTab; crossSid=null; renderBook(); }
+function renderBook(msg){
+  const rem=remainingSuspects(); let body='';
+  const accusing=!!confrontAt;
+  if(bookTab==='plan'){
+    if(!S.planV) body='<p class="fine">まだ何も見つけていない。</p>';
+    else body=planText()+`<div class="evlist">${PLAN.filter(p=>p.ver<=S.planV).map(p=>`<div class="ev"><span class="tag ${S.plan[p.id]?'p':'r'}">${S.plan[p.id]?'解明':'空欄'}</span><div><p><b>${p.q}</b></p>${S.plan[p.id]?`<p>${esc(S.plan[p.id])}</p>`:p.need()?`<div class="choose">${p.opts.map(o=>`<button data-plan="${p.id}" data-opt="${esc(o)}">${esc(o)}</button>`).join('')}</div>`:`<p class="fine">まだ手がかりがない（${p.hint}）</p>`}</div></div>`).join('')}</div>`;
+    if(S.mode==='coop'&&S.role==='past') body+='<p class="fine">計画書は未来の相棒と共有している。空欄を埋めるのは、主に未来の相棒。</p>';
+  }
+  if(bookTab==='board'&&innerWidth<760){
+    body=`<p class="fine">？はまだ分かっていない特徴。「×」で、集めた証拠を根拠に容疑者を外す。${S.mode==='coop'?'ボードは相棒と共有。':''}</p><div class="scards">${K.sus.map(su=>{ const kn=S.known[su.id], out=isCrossed(su.id); return `<div class="scard${out?' out':''}"><div class="top"><span class="mini-dot" style="background:${su.color}"></span><b>${esc(su.name)}</b><small>${esc(su.role)}</small>${out?`<button class="btn ghost small" data-uncross="${su.id}">戻す</button>`:`<button class="btn ghost small" data-cross="${su.id}">×</button>`}</div><div class="chips">${TRAITS.map(t=>kn[t.k]===undefined?`<span class="unk">${t.label}？</span>`:`<span>${t.label}：${TV(t.k,kn[t.k])}</span>`).join('')}</div>${out?`<div class="why">× ${esc(S.cross[su.id].title||'')}</div>`:''}</div>`; }).join('')}</div>
+      ${crossSid!==null?`<div class="evlist"><p class="cap"><b>${esc(K.sus[crossSid].name)}</b>を外す根拠を選ぶ：</p>${S.ev.filter(id=>K.ev[id].pred).map(id=>evCard(id,true,false)).join('')||'<p class="fine">根拠にできる証拠がまだない。</p>'}</div>`:''}`;
+  } else if(bookTab==='board'){
+    body=`<p class="fine">？はまだ分かっていない特徴（マウスを乗せると調べ方）。行の「×」で、集めた証拠を根拠に容疑者を外す。${S.mode==='coop'?'ボードは相棒と共有。':''}</p><div class="boardwrap"><table class="board"><thead><tr><th style="text-align:left">人物</th>${TRAITS.map(t=>`<th>${t.label}</th>`).join('')}<th>状態</th><th></th></tr></thead><tbody>${K.sus.map(su=>{ const kn=S.known[su.id], out=isCrossed(su.id);
+      return `<tr class="${out?'out':''}"><td class="nm"><span class="mini-dot" style="background:${su.color}"></span><b>${esc(su.name)}</b> <small style="color:var(--muted)">${esc(su.role)}</small></td>${TRAITS.map(t=>kn[t.k]===undefined?`<td class="unk" title="${esc(t.how)}">？</td>`:`<td>${TV(t.k,kn[t.k])}</td>`).join('')}<td class="why">${out?'× '+esc(S.cross[su.id].title||''):''}</td><td>${out?`<button class="btn ghost small" data-uncross="${su.id}">戻す</button>`:`<button class="btn ghost small" data-cross="${su.id}">×</button>`}</td></tr>`; }).join('')}</tbody></table></div>
+      ${crossSid!==null?`<div class="evlist"><p class="cap"><b>${esc(K.sus[crossSid].name)}</b>を外す根拠を選ぶ：</p>${S.ev.filter(id=>K.ev[id].pred).map(id=>evCard(id,true,false)).join('')||'<p class="fine">根拠にできる証拠がまだない。</p>'}</div>`:''}`;
+  }
+  if(bookTab==='ev') body=`<div class="evlist">${S.ev.map(id=>evCard(id,false,false)).join('')||'<p class="fine">まだ証拠がない。</p>'}</div><p class="fine">物証・記録・目撃は本当のこと。証言は嘘の可能性がある（嘘をつくのは犯人だけ）。${S.mode==='coop'?'証拠は見つけた本人にしか見えない。相棒に声で伝えよう。':''}</p>`;
+  if(bookTab==='testi') body=`<div class="testi">${K.sus.filter(su=>S.heard[su.id]).map(su=>{ const t=K.testi[su.id]; return `<div><b>${esc(su.name)}</b>：20時45分は${ROOMS[t.room].name}に${t.with!==null?`${esc(K.sus[t.with].name)}と一緒`:'ひとり'}</div>`; }).join('')||'<p class="fine">まだ誰からも話を聞いていない。昨夜のことは、朝にしか聞けない。</p>'}</div>`;
+  if(bookTab==='accuse'){
+    body=!accusing?'<p class="cap">名指しは、犯人と対峙したときにできる。第3章で、犯行の瞬間を押さえよう。</p>':`<p class="cap">犯人と、決め手の証拠を2つ選ぶ（物証か目撃）。容疑者ボードで、ほかの全員に根拠つきの×がついている必要がある。</p>
+      <p class="lbl">犯人</p><div class="choose">${K.sus.map(su=>`<button data-acc="${su.id}" class="${accuse.sid===su.id?'sel':''}">${esc(su.name)}</button>`).join('')}</div>
+      <p class="lbl">決め手の証拠（2つ）</p><div class="evlist">${S.ev.filter(id=>K.ev[id].pred&&K.ev[id].pred.kind==='trait').map(id=>evCard(id,true,accuse.ev.includes(id))).join('')||'<p class="fine">決め手にできる証拠がまだない。</p>'}</div>
+      <button class="btn primary" data-act="doaccuse" ${accuse.sid!==null&&accuse.ev.length===2?'':'disabled'}>名指しする</button>`;
+  }
+  const tabs=[['plan','計画書'],['board','容疑者ボード'],['ev','証拠'],['testi','証言'],['accuse','名指し']];
+  openModal(accusing?'対峙':'手帳',`<div class="tabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" data-tab="${k}" aria-selected="${bookTab===k}">${l}</button>`).join('')}</div><p class="fine">残りの容疑者 ${rem.length}人 ・ 証拠 ${S.ev.length}件 ・ ${ERAS[S.era].name}</p>${body}<p class="msg${msg&&msg.bad?' bad':''}">${msg?esc(msg.t):''}</p>`,accusing?'accusing':'book',true);
+}
+function tryCross(sid,evId){
+  if(excludes(evId,sid)){ S.cross[sid]={ev:evId,title:K.ev[evId].title,t:Date.now()}; crossSid=null; pushSync(); updateSuspCount(); tone([700],.06,'triangle',.04); renderBook({t:`${K.sus[sid].name}に×をつけた。`}); }
+  else { const e=K.ev[evId]; let why='その根拠では外せない。';
+    if(e.pred&&e.pred.kind==='trait'&&S.known[sid][e.pred.k]===undefined) why=`${K.sus[sid].name}の${TRAITS.find(t=>t.k===e.pred.k).label}を、まだ知らない。（${TRAITS.find(t=>t.k===e.pred.k).how}）`;
+    crossSid=sid; renderBook({t:why,bad:true}); }
+}
+function doAccuse(){
+  if(accuse.sid===null||accuse.ev.length!==2||!confrontAt) return;
+  const [e1,e2]=accuse.ev, sid=accuse.sid, su=K.sus[sid], at=confrontAt;
+  // judged ONLY from what the player put forward: the board and the chosen evidence
+  const cand=K.sus.filter(s=>!isCrossed(s.id)&&!excludes(e1,s.id)&&!excludes(e2,s.id));
+  confrontAt=null;
+  if(cand.length===1&&cand[0].id===sid){ closeModal(true);
+    if(at==='study'){ setFlag('caught',true); onCaught(); } else { setFlag('cellarCaught',true); onCellar(); }
+    return; }
+  const line=excludes(e1,sid)||excludes(e2,sid)?`「その証拠だと、${su.name}さんには当てはまらないのでは？」`:`「その2つだと、まだ${cand.length}人に当てはまる。${cand.map(c=>c.name).join('、')}……断定はできないな」`;
+  closeModal(true);
+  openModal('名指し',`<p class="death">あなたは${esc(su.name)}を指さした。</p><p class="say">${esc(line)}</p><p class="cap">影は燭台を握り直した。</p><button class="btn primary" data-act="afteraccuse" data-at="${at}">……</button>`,'attack');
+}
+function onCaught(){
+  tone([523,659,784,1047],.16,'triangle',.08);
+  if(S.mode==='coop'&&!F('cellarCaught')){ S.playing=false; openModal('取り押さえた',`<p class="death">燭台が床に落ちる音。\n当主が振り向き、犯人の腕をつかんだ。</p><p class="cap">過去で犯人を捕まえた。未来の相棒が、逃げようとする犯人をセラーで捕まえれば、すべてが終わる。</p><p class="fine">未来の相棒を待っている……</p>`,'wait'); return; }
+  ending();
+}
+function onCellar(){
+  tone([523,659,784],.14,'triangle',.07);
+  if(!F('caught')){ S.playing=false; openModal('取り押さえた',`<p class="death">小舟の縄を切る手を、つかんで止めた。\n犯人はその場に崩れ落ちた。</p><p class="cap">未来で犯人を捕まえた。過去の相棒が犯行の瞬間を押さえれば、誰も死なない朝が来る。</p><p class="fine">過去の相棒を待っている……</p>`,'wait'); return; }
+  ending();
+}
+function checkEnding(){ if(S.mode==='coop'&&F('caught')&&F('cellarCaught')) ending(); }
+function ending(){
+  if(S.ended) return; S.ended=true; S.playing=false; if(document.pointerLockElement) document.exitPointerLock();
+  const C=K.sus[K.ci], mins=Math.round((Date.now()-S.startedAt)/60000);
+  closeModal(true); showShift('未来が変わった');
+  setTimeout(()=>openModal('誰も死なない朝',`<p class="letter">嵐の明けた朝。
+当主は窓辺で紅茶を飲み、灰田は温室の鉢に水をやっている。
+屋敷の誰も、昨夜何が起きかけたのかを知らない。</p>
+    <p class="death">${esc(C.name)}は、取り押さえられたまま口を開いた。</p><p class="letter">「${esc(C.motive)}。\nだから眠り薬を混ぜ、あの人が書斎でひとりになる20時45分を待った。\nしくじって、灰田に見られたと思ったから……温室で。\nまさか、時間ごと見抜かれるとはね」</p>
+    <div class="stats"><div><small>時を飛んだ回数</small><b>${S.leaps}</b></div><div><small>襲われた回数</small><b>${S.attacks}</b></div><div><small>かかった時間</small><b>${mins}分</b></div></div>
+    <p class="fine">事件コード ${esc(K.code)}。別のコードなら、犯人も証拠も変わる。</p><button class="btn primary" data-act="title">タイトルへ戻る</button>`,'end'),1600);
+}
+function updateSuspCount(){ $('#suspN').textContent=`容疑者 ${remainingSuspects().length}人`; }
+
+/* =========================================================
+   two players: shared state over the room
+   ========================================================= */
+const NET={room:null,nroom:null,unsub:[],partner:null,syncT:0};
+function sharedState(){ return {plan:S.plan,planV:S.planV,flags:S.flags,carved:S.carvedT?{v:S.carved,t:S.carvedT}:null,cross:S.cross,known:S.known}; }
+function pushSync(){ if(S.mode!=='coop'||!NET.nroom) return; NET.nroom.emit('sync',sharedState()).then(()=>{ NET.sendOk=true; }).catch(e=>{ if(!NET.warned){ NET.warned=true; netErr('送信',e); } }); }
+function pushPresence(){ if(S.mode!=='coop'||!NET.nroom) return; NET.nroom.presence({name:S.name||'',role:S.role,era:S.era,waiting:S.waiting?S.waiting.flag:null}).catch(()=>{}); }
+function mergeSync(d){
+  if(!d||typeof d!=='object') return;
+  const before={...S.flags};
+  if(d.plan&&typeof d.plan==='object') for(const id in d.plan){ const p=PLAN.find(x=>x.id===id); if(p&&d.plan[id]===p.ans&&!S.plan[id]){ S.plan[id]=p.ans; toast(`相棒が計画書を解明した：「${p.q}」は「${p.ans}」`); } }
+  if(typeof d.planV==='number'&&d.planV>S.planV&&d.planV<=3) S.planV=d.planV;
+  if(d.flags&&typeof d.flags==='object') for(const k in d.flags){ if(d.flags[k]===true&&!S.flags[k]) S.flags[k]=true; }
+  if(d.carved&&typeof d.carved.v==='string'&&/^\d{4}$/.test(d.carved.v)&&d.carved.t>S.carvedT){ S.carved=d.carved.v; S.carvedT=d.carved.t; }
+  if(d.cross&&typeof d.cross==='object') for(const sid in d.cross){ const c=d.cross[sid]; if(!c||!K.sus[+sid]) continue; const mine=S.cross[sid]; if(!mine||(c.t||0)>(mine.t||0)) S.cross[sid]={ev:String(c.ev||''),title:String(c.title||'').slice(0,40),t:+c.t||0,del:!!c.del}; }
+  if(d.known&&typeof d.known==='object') for(const sid in d.known){ if(!K.sus[+sid]) continue; for(const k in d.known[sid]){ if(TRAITS.find(t=>t.k===k)&&S.known[sid][k]===undefined&&String(d.known[sid][k])===String(K.sus[+sid].tr[k])) S.known[sid][k]=K.sus[+sid].tr[k]; } }
+  updateSuspCount(); updateObjective();
+  for(const k in S.flags) if(!before[k]) onFlag(k,false);
+  if(modalKind==='book') renderBook();
+}
+function members(){ return NET.nroom?NET.nroom.peers().filter(p=>p.presence&&typeof p.presence.role==='string'&&p.kind==='viewer'):[]; }
+function renderMembers(){
+  const ul=$('#members'), m=members(); ul.hidden=!NET.nroom; ul.innerHTML='';
+  m.forEach(p=>{ const li=document.createElement('li'); const nm=document.createElement('span'); nm.textContent=(String(p.presence.name||'名無し').slice(0,10))+(p.sameTab?'（あなた）':''); const tag=document.createElement('small'); tag.textContent=p.presence.role==='past'?'過去担当':'未来担当'; li.append(nm,tag); ul.append(li); });
+  const other=m.find(p=>!p.sameTab);
+  NET.partner=other||null;
+  const pe=$('#partner'); if(S.mode==='coop'&&!$('#game').hidden){ pe.hidden=false; pe.textContent=(NET.lastErr?`通信エラー（${NET.lastErr}） `:NET.conn===false?'通信：再接続中… ':'')+(other?`相棒：${String(other.presence.name||'名無し').slice(0,10)}（${other.presence.role==='past'?'過去':'未来'}）${other.presence.waiting?' 時の狭間で待機中':''}${other.presence.role===S.role?' ※担当が同じ':''}`:`相棒：未接続（部屋「${esc(S.roomCode||'')}」で待っている）`); }
+}
+const NETMSG_UNUSED={not_granted:'このアカウントはこのページの通信に入れない（招待の外、またはログインしていない）',not_permitted:'このアカウントには通信の権限がない（編集者で招待されたアカウントか確認）',revoked:'共有設定が変わって通信が切れた。ページを再読み込みする',limit_reached:'部屋がいっぱい。少し待ってもう一度',upstream_error:'通信が不安定。少し待ってもう一度'};
+const NETMSG={limit_reached:'この部屋はもう2人いる。別の部屋コードにする',upstream_error:'つながらなかった。ふたりとも同じ部屋コードか確かめて、もう一度'};
+function netErr(where,e){ const c=(e&&e.code)||'unknown'; NET.lastErr=c; const m=`【${where}】${NETMSG[c]||'不明なエラー'}（コード：${c}）`; $('#coopNote').textContent=m; if(!$('#game').hidden) toast(m); renderMembers(); }
+async function joinCoop(){
+  if(!NET.room) return;
+  const code=($('#roomCode').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+  const name=($('#nick').value||'').trim().slice(0,10)||'名無し';
+  if(!code){ $('#coopNote').textContent='部屋コードを入れる。'; return; }
+  $('#btnCoop').disabled=true; $('#coopNote').textContent='接続中…';
+  try{ NET.nroom=await NET.room.join('shizumu-'+code.toLowerCase()); }catch(e){ $('#btnCoop').disabled=false; netErr('部屋に入る',e); return; }
+  NET.unsub.forEach(u=>{ try{ u(); }catch(_){} }); NET.unsub=[];
+  NET.unsub.push(NET.nroom.onPeers(()=>renderMembers(),e=>netErr('参加者',e)));
+  NET.unsub.push(NET.nroom.onConnection(c=>{ NET.conn=c; renderMembers(); },e=>netErr('接続',e)));
+  NET.unsub.push(NET.nroom.on('sync',msg=>{ if(msg.sameTab||!K||S.mode!=='coop') return; mergeSync(msg.data); },e=>netErr('受信',e)));
+  const role=$('#roleFuture').checked?'future':'past';
+  startGame(code,'coop',role,name); S.roomCode=code;
+  $('#btnCoop').disabled=false;
+}
+
+/* =========================================================
+   modal + toast + sound
+   ========================================================= */
+let modalKind=null;
+const STICKY=['attack','end','wait','confront','accusing'];
+function openModal(title,html,kind,wide){
+  modalKind=kind||'info'; S.paused=true; if(document.pointerLockElement) document.exitPointerLock();
+  $('#mTitle').textContent=title; $('#mBody').innerHTML=html; $('#panel').classList.toggle('wide',!!wide);
+  $('#modal').hidden=false; $('#mClose').hidden=STICKY.includes(modalKind)&&modalKind!=='wait'; $('#panel').scrollTop=0;
+  if($('#kp')){ entry=''; drawSlots(); }
+}
+function closeModal(force){
+  if(!force&&STICKY.includes(modalKind)&&modalKind!=='wait') return;
+  if(modalKind==='wait'&&!force){ $('#modal').hidden=true; return; }
+  if(modalKind==='start') S.playing=true;
+  $('#modal').hidden=true; $('#mBody').innerHTML=''; modalKind=null; S.paused=false; updateLockMsg();
+}
+function toast(t){ const el=document.createElement('p'); el.textContent=t; const box=$('#toasts'); box.appendChild(el); while(box.children.length>(TOUCH?3:5)) box.firstChild.remove(); setTimeout(()=>el.remove(),6200); }
+let actx;
+function tone(freqs,dur=.15,type='sine',gain=.06){ try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume(); const t=actx.currentTime;
+  freqs.forEach((f,i)=>{ const o=actx.createOscillator(), g=actx.createGain(); o.type=type; o.frequency.value=f; g.gain.setValueAtTime(0,t+i*dur); g.gain.linearRampToValueAtTime(gain,t+i*dur+.01); g.gain.exponentialRampToValueAtTime(.0001,t+i*dur+dur); o.connect(g).connect(actx.destination); o.start(t+i*dur); o.stop(t+i*dur+dur+.05); }); }catch(e){} }
+
+/* =========================================================
+   engine loop + input
+   ========================================================= */
+const keys={};
+function initGL(){
+  if(V.renderer) return true; if(!window.THREE) return false; TH=window.THREE;
+  try{ V.renderer=new TH.WebGLRenderer({antialias:true}); }catch(e){ return false; }
+  V.renderer.setPixelRatio(Math.min(devicePixelRatio||1,TOUCH?1.5:1.75)); V.renderer.outputEncoding=TH.sRGBEncoding; V.renderer.toneMapping=TH.ACESFilmicToneMapping; V.renderer.toneMappingExposure=1.1;
+  V.canvas=V.renderer.domElement; $('#stage').prepend(V.canvas);
+  V.camera=new TH.PerspectiveCamera(70,16/9,.05,80); V.camera.rotation.order='YXZ'; V.ray=new TH.Raycaster();
+  new ResizeObserver(resize).observe($('#stage')); resize();
+  const c=V.canvas; let drag=null;
+  c.addEventListener('pointerdown',e=>{ tone([],0); if(!V.locked){ try{ const r=c.requestPointerLock&&c.requestPointerLock(); if(r&&r.catch) r.catch(()=>{}); }catch(_){} drag={x:e.clientX,y:e.clientY,moved:false}; return; } interact(); });
+  c.addEventListener('pointermove',e=>{ if(drag&&!V.locked){ const dx=e.clientX-drag.x, dy=e.clientY-drag.y; if(Math.abs(dx)+Math.abs(dy)>3) drag.moved=true; V.yaw-=dx*.005; V.pitch=clamp(V.pitch-dy*.005,-1.2,1.2); drag.x=e.clientX; drag.y=e.clientY; } });
+  window.addEventListener('pointerup',()=>{ if(drag&&!drag.moved&&!V.locked) interact(); drag=null; });
+  document.addEventListener('mousemove',e=>{ if(V.locked){ V.yaw-=e.movementX*.0024; V.pitch=clamp(V.pitch-e.movementY*.0024,-1.2,1.2); } });
+  document.addEventListener('pointerlockchange',()=>{ V.locked=document.pointerLockElement===c; updateLockMsg(); });
+  requestAnimationFrame(frame);
+  return true;
+}
+function resize(){ if(!V.renderer) return; const el=$('#stage'), w=el.clientWidth, h=el.clientHeight; if(!w||!h) return; V.renderer.setSize(w,h,false); V.camera.aspect=w/h; V.camera.updateProjectionMatrix(); }
+function updateLockMsg(){ if(TOUCH){ $('#lockmsg').textContent='左下で歩く・右側をドラッグで見回す'; $('#lockmsg').hidden=!(S.playing&&!S.touchMoved&&$('#modal').hidden&&!$('#game').hidden); return; } $('#lockmsg').hidden=!( !V.locked && S.playing && $('#modal').hidden && !$('#game').hidden ); }
+let last=0, tgtT=0;
+function frame(t){
+  requestAnimationFrame(frame);
+  const dt=Math.min(.05,(t-(last||t))/1000); last=t;
+  if($('#game').hidden||!V.scene) return;
+  if(S.playing&&!S.paused){
+    let f=0,s=0; if(keys.KeyW||keys.ArrowUp) f+=1; if(keys.KeyS||keys.ArrowDown) f-=1; if(keys.KeyD) s+=1; if(keys.KeyA) s-=1;
+    if(keys.ArrowLeft) V.yaw+=2*dt; if(keys.ArrowRight) V.yaw-=2*dt;
+    const jm=JOY.on?Math.hypot(JOY.x,JOY.y):0; if(jm>.18){ f+=-JOY.y; s+=JOY.x; }
+    if(f||s){ const sp=(keys.ShiftLeft||keys.ShiftRight||jm>.9?6.2:3.8)*dt*(jm>.18&&jm<.6?.6:1), fx=-Math.sin(V.yaw), fz=-Math.cos(V.yaw), rx=Math.cos(V.yaw), rz=-Math.sin(V.yaw);
+      const mx=(fx*f+rx*s), mz=(fz*f+rz*s), d=Math.hypot(mx,mz); const nx=V.pos.x+mx/d*sp, nz=V.pos.z+mz/d*sp;
+      if(!hit(nx,V.pos.z,.3)) V.pos.x=nx; if(!hit(V.pos.x,nz,.3)) V.pos.z=nz; V.bob+=dt*9; }
+    observe(dt);
+  }
+  if(S.mode==='coop'){ NET.syncT-=dt; if(NET.syncT<=0){ NET.syncT=4; pushSync(); pushPresence(); renderMembers(); } }
+  for(const id in V.npc){ const n=V.npc[id]; n.ph+=dt; n.m.rotation.z=Math.sin(n.ph*1.3)*.015; }
+  $('#room').textContent=ROOMS[roomAt(V.pos.x,V.pos.z)].name;
+  tgtT-=dt; if(tgtT<=0){ tgtT=.12; const o=S.playing&&!S.paused?aimTarget():null; const tg=$('#target'); if(o){ tg.textContent=(o.userData.label||'調べる')+'（E）'; tg.hidden=false; } else tg.hidden=true;
+    if(TOUCH){ const b=$('#tAct'); b.classList.toggle('off',!o); b.textContent=o?(o.userData.person!==undefined?'話す':'調べる'):'調べる'; $('#tWatch').disabled=!(S.mode==='solo'&&F('watch')&&!ERAS[S.era].past); } }
+  for(const L of V.lights){ if(L.f) L.l.intensity=L.b*(1-L.f/2+L.f*(.5+.5*Math.sin(t*.011)*Math.sin(t*.0037))); }
+  if(V.water&&V.water.visible) V.water.position.y=.07+Math.sin(t*.002)*.01;
+  const bob=Math.sin(V.bob)*.035;
+  V.camera.position.set(V.pos.x,1.6+bob,V.pos.z); V.camera.rotation.set(V.pitch,V.yaw,0,'YXZ');
+  V.renderer.render(V.scene,V.camera);
+}
+document.addEventListener('keydown',e=>{
+  if($('#game').hidden) return;
+  if(/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||'')) return;
+  if(e.code==='Tab'){ e.preventDefault(); if(($('#modal').hidden&&(S.playing||S.waiting))) openBook(); else if(modalKind==='book') closeModal(); return; }
+  if(!$('#modal').hidden){
+    if(e.key==='Escape') closeModal();
+    if($('#kp')){ if(/^[0-9]$/.test(e.key)) keyPress(e.key); else if(e.key==='Backspace') keyPress('del'); else if(e.key==='Enter') keyPress('go'); }
+    return;
+  }
+  if(/^(Key[WASDET]|Arrow|Shift)/.test(e.code)) e.preventDefault();
+  keys[e.code]=true;
+  if(e.code==='KeyE') interact();
+  if(e.code==='KeyT') useWatch();
+});
+document.addEventListener('keyup',e=>{ keys[e.code]=false; });
+window.addEventListener('blur',()=>{ for(const k in keys) keys[k]=false; });
+
+$('#mClose').addEventListener('click',()=>closeModal());
+$('#modal').addEventListener('click',e=>{
+  if(e.target.id==='modal'){ closeModal(); return; }
+  const a=e.target.closest('[data-act]');
+  if(a){ const act=a.dataset.act;
+    if(act==='begin'){ closeModal(); return; }
+    if(act==='leap') return leap(a.dataset.to,a.dataset.wait||null);
+    if(act==='pour'){ setFlag('pour'); S.armed={kind:'P1',room:'dining'}; closeModal(); updateObjective(); tone([200,150],.3,'triangle',.05); toast('ブランデーを捨てて、水を入れておいた。'); showShift('過去が変わった'); setTimeout(()=>toast('……廊下の向こうで、誰かがこちらを見ている。この部屋を出れば、何かが起きる。'),2200); rebuildKeepPos(); return; }
+    if(act==='hidekey'){ setFlag('keyHidden'); S.hasBoxKey=false; S.armed={kind:'P2',room:'hall'}; closeModal(); updateObjective(); showShift('過去が変わった'); setTimeout(()=>toast('……どこかで扉のきしむ音。この部屋を出れば、何かが起きる。'),2200); return; }
+    if(act==='watchgo'){ const to=a.dataset.to; closeModal(); S.playing=false; showShift('時が巻き戻る','back'); setTimeout(()=>{ S.leaps++; enterEra(to); },1500); return; }
+    if(act==='toaccuse'){ confrontAt=a.dataset.at; accuse={sid:null,ev:[]}; bookTab='accuse'; closeModal(true); return renderBook(); }
+    if(act==='afteraccuse'){ closeModal(true); S.playing=true; S.hidden=false; return attack(a.dataset.at==='study'?'P3':'FC'); }
+    if(act==='doaccuse') return doAccuse();
+    if(act==='title') return toTitle(); }
+  const k=e.target.closest('[data-k]'); if(k) return keyPress(k.dataset.k);
+  const q=e.target.closest('[data-q]'); if(q) return answer(+q.dataset.sid,q.dataset.q);
+  const tb=e.target.closest('[data-tab]'); if(tb){ bookTab=tb.dataset.tab; crossSid=null; return renderBook(); }
+  const cr=e.target.closest('[data-cross]'); if(cr){ crossSid=+cr.dataset.cross; return renderBook(); }
+  const un=e.target.closest('[data-uncross]'); if(un){ const sid=+un.dataset.uncross; S.cross[sid]={...(S.cross[sid]||{}),del:true,t:Date.now()}; pushSync(); updateSuspCount(); return renderBook(); }
+  const pk=e.target.closest('[data-pick]'); if(pk){ const id=pk.dataset.pick;
+    if(bookTab==='board'&&crossSid!==null) return tryCross(crossSid,id);
+    if(bookTab==='accuse'){ const i=accuse.ev.indexOf(id); if(i>=0) accuse.ev.splice(i,1); else { accuse.ev.push(id); if(accuse.ev.length>2) accuse.ev.shift(); } return renderBook(); } }
+  const pl=e.target.closest('[data-plan]'); if(pl) return solvePlan(pl.dataset.plan,pl.dataset.opt);
+  const ac=e.target.closest('[data-acc]'); if(ac){ accuse.sid=+ac.dataset.acc; return renderBook(); }
+});
+
+/* =========================================================
+   title / start
+   ========================================================= */
+const TOUCH=(window.matchMedia&&matchMedia('(pointer: coarse)').matches)||('ontouchstart' in window&&navigator.maxTouchPoints>0);
+if(TOUCH) document.body.classList.add('touch');
+const JOY={on:false,id:null,ox:0,oy:0,x:0,y:0};
+(function bindTouch(){
+  const zone=$('#joyzone'), base=$('#joybase'), knob=$('#joyknob'), R0=52;
+  zone.addEventListener('pointerdown',e=>{ e.preventDefault(); if(JOY.on) return; const r=zone.getBoundingClientRect(); JOY.on=true; JOY.id=e.pointerId; JOY.ox=e.clientX; JOY.oy=e.clientY; JOY.x=JOY.y=0;
+    base.style.left=(e.clientX-r.left)+'px'; base.style.top=(e.clientY-r.top)+'px'; base.hidden=false; $('#joyhint').hidden=true; knob.style.transform=''; try{ zone.setPointerCapture(e.pointerId); }catch(_){} });
+  zone.addEventListener('pointermove',e=>{ if(!JOY.on||e.pointerId!==JOY.id) return; let dx=e.clientX-JOY.ox, dy=e.clientY-JOY.oy; const d=Math.hypot(dx,dy); if(d>R0){ dx*=R0/d; dy*=R0/d; }
+    JOY.x=dx/R0; JOY.y=dy/R0; knob.style.transform=`translate(${dx}px,${dy}px)`; if(d>12&&!S.touchMoved){ S.touchMoved=true; updateLockMsg(); } });
+  const end=e=>{ if(e.pointerId!==JOY.id) return; JOY.on=false; JOY.id=null; JOY.x=JOY.y=0; base.hidden=true; };
+  zone.addEventListener('pointerup',end); zone.addEventListener('pointercancel',end);
+  $('#tAct').addEventListener('click',()=>{ ac(); interact(); });
+  $('#tBook').addEventListener('click',()=>{ if(S.playing||S.waiting){ S.paused=false; openBook(); } });
+  $('#tWatch').addEventListener('click',useWatch);
+})();
+function ac(){ tone([],0); }
+function randCode(){ const c='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<4;i++) s+=c[Math.floor(Math.random()*c.length)]; return s; }
+$('#codeIn').value=randCode(); $('#roomCode').value=randCode();
+try{ $('#nick').value=localStorage.getItem('shizumu-nick')||''; }catch(e){}
+$('#heroClock').innerHTML=clockSVG(8,45,{big:true});
+$('#castList').innerHTML=CAST.map(c=>`<div class="who"><span class="dot" style="background:${c.color}"></span><span><b>${esc(c.name)}</b><small>${esc(c.role)}</small></span></div>`).join('');
+function toTitle(){ closeModal(true); S.playing=false; $('#game').hidden=true; $('#title').hidden=false; $('#fade').classList.remove('on'); $('#partner').hidden=true; }
+function startGame(code,mode,role,name){
+  K=generateCase(code); if(!K){ toast('事件を作れなかった。別のコードで試す'); return; }
+  resetState(); S.mode=mode; S.role=role; S.name=name||''; accuse={sid:null,ev:[]}; bookTab='plan';
+  try{ if(name) localStorage.setItem('shizumu-nick',name); }catch(e){}
+  $('#title').hidden=true; $('#game').hidden=false;
+  if(!initGL()){ $('#stage').insertAdjacentHTML('beforeend','<p class="lockmsg">この端末では3D表示が使えない。</p>'); return; }
+  resize();
+  if(mode==='coop'&&role==='past'){ setFlag('watch',true); enterEra('P1'); }
+  else enterEra('FA');
+  if(mode==='coop'){ pushPresence(); pushSync(); renderMembers(); }
+  window.scrollTo(0,$('#stage').getBoundingClientRect().top+window.scrollY-(TOUCH?0:10));
+}
+$('#btnQuit').addEventListener('click',toTitle);
+$('#btnBook').addEventListener('click',()=>{ if(S.playing||S.waiting){ S.paused=false; openBook(); } });
+$('#btnWatch').addEventListener('click',useWatch);
+$('#btnSolo').addEventListener('click',()=>{ const code=($('#codeIn').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6)||randCode(); startGame(code,'solo','solo',''); });
+$('#btnCoop').addEventListener('click',joinCoop);
+$('#btnCoop').disabled=true;
+NET.room=window.Peer?makeLobby():null;
+if(NET.room){ $('#btnCoop').disabled=false; $('#coopNote').textContent='相手と同じ部屋コードを入れ、別の担当を選んで入る。ログインは不要。'; }
+else $('#coopNote').textContent='通信の部品を読み込めなかった。ページを再読み込みする。ひとり用は遊べる。';
+})();
+
+</script>
+
+</body>
+</html>
